@@ -59,7 +59,6 @@
     base-uri 'none';
     form-action 'none';
   ">
-  <!-- 相機必須開放給 self，其餘敏感權限（麥克風、定位、陀螺儀等）一律完全禁用 -->
   <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=()">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
@@ -68,7 +67,7 @@
   <!-- 1. 外部防點擊劫持守衛 -->
   <script src="js/frame-guard.js"></script>
 
-  <!-- 2. 本地 Vendor 函式庫 (CI 會自動計算並注入 SRI 雜湊) -->
+  <!-- 2. 本地 Vendor 函式庫 -->
   <script src="vendor/html5-qrcode.min.js" 
           integrity="__VENDOR_SRI_HASH__" 
           crossorigin="anonymous"></script>
@@ -78,7 +77,7 @@
   <!-- 語言切換浮動按鈕 -->
   <button id="langToggleBtn" class="lang-toggle-btn" type="button">English</button>
 
-  <!-- 獨立提示條：各自獨立，不相互覆蓋 -->
+  <!-- 獨立提示條 -->
   <div id="ramModeNotice" class="banner-notice hidden" data-i18n="ramModeNotice">⚠️ 目前處於純記憶體模式，請勿重新整理頁面</div>
   <div id="swUpdateNotice" class="banner-notice banner-info hidden" data-i18n="swUpdateNotice">📢 系統有新版本，請於活動結束後再行重新整理。</div>
   <div id="cameraFallbackNotice" class="banner-notice hidden" data-i18n="cameraFallbackNotice">相機啟動受限，請使用下方手動補登</div>
@@ -89,6 +88,22 @@
       <h2 data-i18n="pinTitle">請輸入工作 PIN 碼</h2>
       <p data-i18n="pinDesc">解密當日名冊並啟用驗票工作台</p>
       
+      <!-- 方案 B：自帶名冊選取區 -->
+      <div class="form-group">
+        <label for="manifestSourceSelect" data-i18n="selectManifestSource">活動名冊來源：</label>
+        <select id="manifestSourceSelect">
+          <option value="default" data-i18n="manifestDefault">示範名冊 (內建 Demo)</option>
+          <option value="custom" data-i18n="manifestCustom">📁 自行載入名冊 (.enc.json)</option>
+        </select>
+      </div>
+
+      <!-- 自訂名冊檔案上傳區 (預設隱藏) -->
+      <div id="customManifestContainer" class="form-group hidden">
+        <label for="manifestFileInput" data-i18n="uploadManifestLabel">選擇加密名冊檔案：</label>
+        <input type="file" id="manifestFileInput" accept=".json,.enc.json" class="file-input-control">
+        <div id="manifestFileInfo" class="file-status-tag">尚未選擇檔案</div>
+      </div>
+
       <div class="form-group">
         <label for="initialDeviceSelect" data-i18n="selectStation">指定工位：</label>
         <select id="initialDeviceSelect">
@@ -104,7 +119,7 @@
       <button id="unlockBtn" class="btn-primary" data-i18n="unlockBtn">解鎖系統</button>
       <div id="pinError" class="error-msg"></div>
 
-      <!-- 📱 PWA 安裝按鈕與 iOS 提示 (無 inline-style，符合 CSP 規範) -->
+      <!-- 📱 PWA 安裝按鈕與 iOS 提示 -->
       <button id="installPwaBtn" class="btn-tool pwa-install-btn hidden" type="button" data-i18n="installPwaBtn">
         📲 加入手機主畫面 (安裝 App)
       </button>
