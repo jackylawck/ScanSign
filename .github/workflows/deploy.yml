@@ -1,0 +1,31 @@
+name: Deploy ScanSign PWA
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Inject Cache Version, SRI and Integrity Map
+        run: |
+          # 1. 注入唯一版本號
+          CACHE_VER="v$(date +%Y%m%d%H%M)-${GITHUB_SHA::7}"
+          sed -i "s|__CACHE_VERSION__|$CACHE_VER|g" sw.js
+
+          # 2. 自動計算 Vendor SRI 雜湊並注入 index.html
+          VENDOR_HASH="sha384-$(openssl dgst -sha384 -binary vendor/html5-qrcode.min.js | openssl base64 -A)"
+          sed -i "s|__VENDOR_SRI_HASH__|$VENDOR_HASH|g" index.html
+
+          # 3. 固化所有模組的 SHA-256 指紋
+          python3 scripts/inject_sw_integrity.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
