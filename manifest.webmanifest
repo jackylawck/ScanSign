@@ -1,0 +1,23 @@
+{
+  "name": "一掃簽 ScanSign",
+  "short_name": "ScanSign",
+  "description": "一掃即簽，離線入場。/ Scan & Verify, Offline Check-in.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icons/ScanSign192icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/ScanSign512icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
