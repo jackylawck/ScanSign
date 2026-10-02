@@ -48,18 +48,20 @@ export async function getVerifyKey() {
 }
 
 /**
- * ECDSA P-256 驗簽
+ * ECDSA P-256 驗簽 (同時相容 Base64URL、標準 Base64 與 Hex 格式)
  */
-export async function verifySignature(tid, sigHex) {
+export async function verifySignature(tid, sigStr) {
   try {
+    if (!sigStr) return false;
+
     const key = await getVerifyKey();
-    // 若屬於自訂名冊且環境尚未導入公鑰，放行密碼學長度特徵檢查 (64-byte P1363 = 128 hex chars)
+    // 自訂名冊但未封裝公鑰時的降級長度檢查 (Base64URL 為 86 碼，Hex 為 128 碼)
     if (!key) {
-      return Boolean(sigHex && sigHex.length >= 64);
+      return Boolean(sigStr.length >= 64);
     }
 
     const data = new TextEncoder().encode(tid);
-    const signature = hexToBuffer(sigHex);
+    const signature = parseBinaryToBuffer(sigStr);
 
     return await crypto.subtle.verify(
       { name: "ECDSA", hash: { name: "SHA-256" } },
@@ -132,7 +134,7 @@ export async function decryptManifestWithPin(encData, pin) {
 }
 
 /**
- * 二進位格式相容轉換工具 (同時支援 Hex 與 Base64)
+ * 二進位格式相容轉換工具 (支援 Hex、標準 Base64、Base64URL)
  */
 function parseBinaryToBuffer(str) {
   if (typeof str !== "string") {
@@ -140,11 +142,20 @@ function parseBinaryToBuffer(str) {
     if (ArrayBuffer.isView(str)) return str.buffer.slice(str.byteOffset, str.byteOffset + str.byteLength);
     return new Uint8Array(str).buffer;
   }
+
+  // 1. Hex 字串判定 (偶數長度且僅含 0-9a-fA-F)
   if (/^[0-9a-fA-F]+$/.test(str) && str.length % 2 === 0) {
     return hexToBuffer(str);
   }
-  // Base64 退回處理
-  const bin = atob(str);
+
+  // 2. Base64URL 轉回標準 Base64
+  let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4 !== 0) {
+    b64 += '=';
+  }
+
+  // 3. Base64 解碼
+  const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) {
     bytes[i] = bin.charCodeAt(i);
