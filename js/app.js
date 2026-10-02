@@ -21,7 +21,7 @@ import {
   clearCurrentSessionMemory
 } from './storage.js';
 import { safeStartCamera, safeStopCamera, bindVisibilityAutoRecover, enableScreenWakeLock } from './scanner.js';
-import { renderCardSuccess, renderCardError, bindExportAction } from './ui.js';
+import { renderCardSuccess, renderCardError, bindExportAction, playFeedbackSound } from './ui.js';
 import { initSearchIndex, handleSearchInput } from './search.js';
 import { 
   generateSigningKeyPair, 
@@ -151,9 +151,9 @@ document.getElementById("startGenerateBtn").addEventListener("click", async () =
     for (let i = 0; i < guests.length; i++) {
       const g = guests[i];
       const tid = `G${String(i + 1).padStart(4, '0')}`;
-      const sigHex = await signToken(keyPair.privateKey, tid);
-      const qrData = `v1.${tid}.${sigHex}`;
-      const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+      const sigStr = await signToken(keyPair.privateKey, tid);
+      const qrData = `v1.${tid}.${sigStr}`;
+      const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
 
       manifestObj[tid] = {
         name: g.name,
@@ -465,7 +465,7 @@ unlockBtn.addEventListener("click", async () => {
   }
 });
 
-// 3. 掃描處理流程 (同步接收、非同步安全解耦，徹底杜絕相機回調被阻塞)
+// 3. 掃描處理流程 (支援容錯尋找名冊鍵值，杜絕因格式前綴不符引發的靜默失敗)
 function onScan(decodedText) {
   try {
     if (!decodedText || typeof decodedText !== "string" || !decodedText.startsWith("v1.")) {
@@ -480,8 +480,25 @@ function onScan(decodedText) {
       return;
     }
 
-    const [_, tid, sigHex] = parts;
-    const guest = manifest ? manifest[tid] : null;
+    const [_, tid, sigStr] = parts;
+
+    // 關鍵修復：雙向匹配名冊鍵值 (相容 "G0005" 與 "5" 兩種命名格式)
+    let guest = null;
+    if (manifest) {
+      if (manifest[tid]) {
+        guest = manifest[tid];
+      } else {
+        const numericTid = tid.replace(/\D/g, '');
+        if (numericTid && manifest[numericTid]) {
+          guest = manifest[numericTid];
+        } else {
+          const paddedTid = `G${numericTid.padStart(4, '0')}`;
+          if (manifest[paddedTid]) {
+            guest = manifest[paddedTid];
+          }
+        }
+      }
+    }
 
     if (!guest) {
       logSecurityIncident("NOT_FOUND", { tid, device_id: currentDeviceId });
@@ -494,7 +511,7 @@ function onScan(decodedText) {
       logSecurityIncident("DUPLICATE_ALERT", { tid, device_id: currentDeviceId });
     }
 
-    // 立即秒級反應：震動、變換卡片、更新計數
+    // 立即秒級反應：音效、視覺卡片更新
     renderCardSuccess(guest, isDuplicate);
     
     const logRef = recordCheckIn({
@@ -507,8 +524,8 @@ function onScan(decodedText) {
     });
     updateTally();
 
-    // 背景非同步驗簽，使用 catch 完整捕獲，決不丟出 Uncaught Promise
-    verifySignature(tid, sigHex)
+    // 背景非同步驗簽，完整捕獲防拋錯
+    verifySignature(tid, sigStr)
       .then((isValid) => {
         if (!isValid) {
           updateLogVerifiedStatus(logRef, "invalid");
@@ -529,7 +546,10 @@ function onScan(decodedText) {
 
 // 4. 手動補登獨立通道
 function handleManualCheckIn(tid) {
-  const guest = manifest ? manifest[tid] : null;
+  let guest = null;
+  if (manifest) {
+    guest = manifest[tid] || manifest[tid.replace(/\D/g, '')];
+  }
   if (!guest) return;
 
   const isDuplicate = inMemoryScannedSet.has(tid);
@@ -597,7 +617,7 @@ function truncateString(str, maxLen = 1000) {
   return s.length > maxLen ? s.slice(0, maxLen) + "...[truncated]" : s;
 }
 
-// 6. 匯出邏輯 (整合全場名冊：一目了然有邊個有到、邊個無到)
+// 6. 匯出邏輯 (整合全場名冊)
 bindExportAction(async () => {
   const exportBtn = document.getElementById("exportSafeBtn");
   const originalText = exportBtn.textContent;
