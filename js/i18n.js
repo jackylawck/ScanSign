@@ -27,11 +27,14 @@ export const DICTIONARY = {
     welcome: "歡迎蒞臨",
     pleaseProceed: "請入座",
     searchPlaceholder: "輸入姓名或電話後 4 碼補登...",
+    btnLockStation: "🔒 鎖定 / 換名冊",
     btnFlipGuest: "🔄 翻轉卡片(給賓客看)",
     btnFlipStaff: "📱 切換為工作人員視角",
     btnExport: "📥 匯出資料",
     btnExportConfirm: "⚠️ 再點一次確認匯出 (3s)",
     btnCheckIn: "補登",
+    statusPresent: "已出席",
+    statusAbsent: "未報到",
     statusAlreadyChecked: "已報到",
     verifyFail: "驗簽失敗",
     forgedTicket: "偽造票券",
@@ -62,7 +65,7 @@ export const DICTIONARY = {
     guideStep3Title: "3. 現場離線驗票",
     guideStep3Desc: "現場工作人員選擇「📁 自行載入名冊」，上傳該檔案並輸入主辦方自訂的 PIN 碼即可啟動。設備可切換為飛行模式斷網運作。",
     guideStep4Title: "4. 去重與匯出",
-    guideStep4Desc: "系統以 ECDSA P-256 毫秒級驗簽並標記重複票券。結束後點擊「匯出資料」即可下載 CSV 入場總表。",
+    guideStep4Desc: "系統以 ECDSA P-256 毫秒級驗簽並標記重複票券。結束後點擊「匯出資料」即可下載 CSV 出缺席總表。",
     complianceTitle: "🛡️ 全球法規遵從與治理架構說明",
     compNonAiTitle: "🤖 人工智慧法規排除判定 (EU AI Act / ISO 42001 / CAC)",
     compNonAiDesc: "本系統架構屬純確定性演算法（Deterministic Algorithmic System），依賴 Web Crypto API 數學運算，完全不具備自主推論、訓練或預測模型，依法排除於 EU AI Act 第 3(1) 條、ISO/IEC 42001 (AIMS) 及國家網信辦演算法備案管轄範疇。",
@@ -98,11 +101,14 @@ export const DICTIONARY = {
     welcome: "Welcome",
     pleaseProceed: "Please proceed to your seat",
     searchPlaceholder: "Search name or last 4 phone digits...",
+    btnLockStation: "🔒 Lock / Switch Roster",
     btnFlipGuest: "🔄 Flip View (Guest)",
     btnFlipStaff: "📱 Staff View",
     btnExport: "📥 Export CSV",
     btnExportConfirm: "⚠️ Click again to confirm (3s)",
     btnCheckIn: "Check-in",
+    statusPresent: "Present",
+    statusAbsent: "Absent",
     statusAlreadyChecked: "Checked-in",
     verifyFail: "Invalid Signature",
     forgedTicket: "Forged Ticket",
@@ -151,7 +157,7 @@ export function getLang() {
 }
 
 export function t(key) {
-  return DICTIONARY[currentLang][key] || key;
+  return (DICTIONARY[currentLang] && DICTIONARY[currentLang][key]) || key;
 }
 
 export function setLang(lang) {
@@ -169,14 +175,14 @@ export function toggleLang() {
 export function applyTranslations() {
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const k = el.getAttribute("data-i18n");
-    if (DICTIONARY[currentLang][k]) {
+    if (DICTIONARY[currentLang] && DICTIONARY[currentLang][k]) {
       el.textContent = DICTIONARY[currentLang][k];
     }
   });
 
   document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
     const k = el.getAttribute("data-i18n-placeholder");
-    if (DICTIONARY[currentLang][k]) {
+    if (DICTIONARY[currentLang] && DICTIONARY[currentLang][k]) {
       el.setAttribute("placeholder", DICTIONARY[currentLang][k]);
     }
   });
