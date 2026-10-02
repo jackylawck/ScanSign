@@ -6,7 +6,7 @@ let activeWakeLock = null;
 
 let lastScanText = "";
 let lastScanTime = 0;
-const SCAN_COOLDOWN_MS = 1500;
+const SCAN_COOLDOWN_MS = 2000;
 
 // 單例監聽標誌與動態熱更新回調指標
 let visibilityBound = false;
@@ -43,17 +43,19 @@ export async function safeStartCamera(onScanSuccess) {
     html5QrCode = new Html5Qrcode("reader", {
       formatsToSupport: formats,
       verbose: false,
-      useBarCodeDetectorIfSupported: true
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
     });
   }
 
-  // 2. 提供合法且動態適配的 qrbox 函式（恢復白色瞄準框，避免底層 qrRegion 崩潰）
+  // 2. 自適應瞄準框：佔畫面 80%，給予充分識別邊距
   const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-    const boxSize = Math.floor(minEdge * 0.75);
+    const boxSize = Math.floor(minEdge * 0.8);
     return {
-      width: Math.max(200, Math.min(boxSize, 300)),
-      height: Math.max(200, Math.min(boxSize, 300))
+      width: Math.max(220, Math.min(boxSize, 320)),
+      height: Math.max(220, Math.min(boxSize, 320))
     };
   };
 
@@ -67,9 +69,7 @@ export async function safeStartCamera(onScanSuccess) {
     },
     videoConstraints: {
       facingMode: "environment",
-      focusMode: "continuous",
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+      focusMode: "continuous"
     }
   };
 
@@ -79,13 +79,22 @@ export async function safeStartCamera(onScanSuccess) {
       config,
       (decodedText) => {
         const now = Date.now();
-        if (decodedText === lastScanText && (now - lastScanTime < SCAN_COOLDOWN_MS)) {
-          return;
+        // 關鍵修復：只有在冷卻時間未到時才阻斷；一旦超過冷卻時間，立即放行觸發
+        if (decodedText === lastScanText) {
+          if (now - lastScanTime < SCAN_COOLDOWN_MS) {
+            return;
+          }
         }
+        
         lastScanText = decodedText;
         lastScanTime = now;
+
         if (typeof onScanSuccess === "function") {
-          onScanSuccess(decodedText);
+          try {
+            onScanSuccess(decodedText);
+          } catch (e) {
+            console.error("onScanSuccess 回調執行異常:", e);
+          }
         }
       },
       () => {} // 忽略常態性無條碼幀
