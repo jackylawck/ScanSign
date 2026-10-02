@@ -46,7 +46,7 @@
     script-src 'self';
     worker-src 'self';
     style-src 'self';
-    img-src 'self' data: blob: https://jackylawck.github.io;
+    img-src 'self' data: blob: https://jackylawck.github.io https://api.qrserver.com;
     connect-src 'self';
     manifest-src 'self';
     base-uri 'none';
@@ -158,7 +158,7 @@
           <div class="admin-success-tip" data-i18n="adminSuccessTip">🎉 加密完成！名冊與票券已在本地生成，零上傳安全無虞。</div>
           <div class="admin-download-row">
             <button id="downloadManifestBtn" class="btn-tool" type="button" data-i18n="adminBtnDownloadManifest">📥 下載加密名冊 (manifest.enc.json)</button>
-            <button id="downloadTicketsHtmlBtn" class="btn-tool" type="button" data-i18n="adminBtnDownloadTickets">🖨️ 下載可列印票券 (tickets.html)</button>
+            <button id="downloadTicketsHtmlBtn" class="btn-tool" type="button" data-i18n="adminBtnDownloadTickets">🖨️ 下載可列印/發送票券 (tickets.html)</button>
           </div>
         </div>
       </div>
@@ -185,7 +185,7 @@
         </div>
         <div class="guide-item">
           <strong data-i18n="guideStep4Title">4. 去重與匯出</strong>
-          <p data-i18n="guideStep4Desc">系統以 ECDSA P-256 毫秒級驗簽並標記重複票券。結束後點擊「匯出資料」即可下載 CSV 入場總表。</p>
+          <p data-i18n="guideStep4Desc">系統以 ECDSA P-256 毫秒級驗簽並標記重複票券。結束後點擊「匯出資料」即可下載全場出缺席總表。</p>
         </div>
       </div>
       <button id="closeGuideBtn" class="btn-primary modal-close-btn" data-i18n="btnClose">關閉</button>
@@ -213,7 +213,10 @@
   <!-- 主工作台 (解鎖後顯示) -->
   <main id="mainApp" class="hidden">
     <header class="status-bar">
-      <div class="counter-tag" id="currentStationTag">C1</div>
+      <div class="station-control-group">
+        <button id="lockScreenBtn" class="nav-badge-btn lock-btn" type="button">🔒 鎖定 / 換名冊</button>
+        <div class="counter-tag" id="currentStationTag">C1</div>
+      </div>
       <div class="live-tally"><span data-i18n="checkedInCount">已簽到：</span><span id="scanCountDisplay">0</span></div>
     </header>
 
@@ -241,12 +244,14 @@
       </div>
     </section>
 
+    <!-- 手動搜尋補登區：整合「補登」操作按鈕 -->
     <section class="manual-box">
       <div class="input-wrapper">
         <input type="text" id="manualInput" class="manual-input" 
                placeholder="輸入姓名或電話後 4 碼補登..." 
                data-i18n-placeholder="searchPlaceholder" 
                autocomplete="off">
+        <button type="button" class="btn-primary manual-action-btn" id="manualSearchActionBtn">補登</button>
         <button type="button" class="clear-btn" id="clearSearchBtn">✕</button>
       </div>
       <div id="searchResults" class="search-results"></div>
