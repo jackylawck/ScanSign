@@ -4,7 +4,7 @@ if (window.__FRAME_BLOCKED__) {
 }
 
 import { t, toggleLang, applyTranslations } from './i18n.js';
-import { verifySignature, decryptManifestWithPin } from './crypto.js';
+import { verifySignature, decryptManifestWithPin, resetVerifyKey } from './crypto.js';
 import { 
   initStorage, 
   inMemoryScannedSet, 
@@ -17,7 +17,8 @@ import {
   getPendingCheckinWrites,
   getPendingSecurityWrites,
   getCheckedInCount,
-  getSecurityLogs
+  getSecurityLogs,
+  clearCurrentSessionMemory
 } from './storage.js';
 import { safeStartCamera, safeStopCamera, bindVisibilityAutoRecover, enableScreenWakeLock } from './scanner.js';
 import { renderCardSuccess, renderCardError, bindExportAction } from './ui.js';
@@ -59,18 +60,22 @@ const adminModal = document.getElementById("adminModal");
 document.getElementById("openAdminBtn").addEventListener("click", () => adminModal.classList.remove("hidden"));
 document.getElementById("closeAdminBtn").addEventListener("click", () => adminModal.classList.add("hidden"));
 
-// 🔒 返回首頁 / 重新更換工位或名冊
+// 🔒 返回首頁 / 重新更換工位或名冊 (徹底重設所有記憶體狀態)
 const lockScreenBtn = document.getElementById("lockScreenBtn");
 if (lockScreenBtn) {
   lockScreenBtn.addEventListener("click", async () => {
     await safeStopCamera();
+    clearCurrentSessionMemory();
+    resetVerifyKey();
+    manifest = null;
+    document.getElementById("scanCountDisplay").textContent = "0";
     document.getElementById("mainApp").classList.add("hidden");
     document.getElementById("pinLockScreen").classList.remove("hidden");
     document.getElementById("pinInput").value = "";
   });
 }
 
-// 📥 下載雙擊直開的 Excel 範本 (.xls 格式，徹底跳過 Windows 匯入字串精靈)
+// 📥 下載名冊範本 (.xls 格式)
 const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
 if (downloadTemplateBtn) {
   downloadTemplateBtn.addEventListener("click", () => {
@@ -156,7 +161,6 @@ document.getElementById("startGenerateBtn").addEventListener("click", async () =
         phone_suffix: g.phone
       };
 
-      // 產生單張獨立卡片，支援「💾 下載個別圖片」方便 WhatsApp / Email 發送
       ticketCards.push(`
         <div class="ticket-card" id="card-${tid}">
           <h2>${g.name}</h2>
@@ -171,12 +175,10 @@ document.getElementById("startGenerateBtn").addEventListener("click", async () =
     }
 
     progressText.textContent = `🔒 正在使用自訂 PIN (${pin}) 進行 PBKDF2 與 AES-256-GCM 加密...`;
-    // 將 keyPair.publicKey 傳入，封裝入名冊實現離線驗簽閉環
     const encryptedData = await encryptManifestWithCustomPin(manifestObj, pin, keyPair.publicKey);
 
     generatedEncJson = JSON.stringify(encryptedData, null, 2);
     
-    // 生成包含單張下載、一鍵列印的完整票券平台 HTML
     generatedTicketsHtml = `
       <!DOCTYPE html>
       <html>
@@ -463,60 +465,71 @@ unlockBtn.addEventListener("click", async () => {
   }
 });
 
-// 3. 掃描處理流程
-async function onScan(decodedText) {
-  if (!decodedText.startsWith("v1.")) {
-    logSecurityIncident("INVALID_FORMAT", { raw: decodedText, device_id: currentDeviceId });
-    renderCardError(t("verifyFail"), t("forgedTicket"));
-    return;
-  }
-
-  const parts = decodedText.split(".");
-  if (parts.length !== 3) {
-    renderCardError(t("verifyFail"), t("forgedTicket"));
-    return;
-  }
-
-  const [_, tid, sigHex] = parts;
-  const guest = manifest[tid];
-
-  if (!guest) {
-    logSecurityIncident("NOT_FOUND", { tid, device_id: currentDeviceId });
-    renderCardError(t("unknownTicket"), t("gotoHelpDesk"));
-    return;
-  }
-
-  const isDuplicate = inMemoryScannedSet.has(tid);
-  if (isDuplicate) {
-    logSecurityIncident("DUPLICATE_ALERT", { tid, device_id: currentDeviceId });
-  }
-
-  renderCardSuccess(guest, isDuplicate);
-  
-  const logRef = recordCheckIn({
-    tid,
-    device_id: currentDeviceId,
-    scanned_at: new Date().toISOString(),
-    table_no: guest.table || "--",
-    method: "scan",
-    verified: "pending"
-  });
-  updateTally();
-
-  verifySignature(tid, sigHex).then((isValid) => {
-    if (!isValid) {
-      updateLogVerifiedStatus(logRef, "invalid");
-      logSecurityIncident("INVALID_SIG", { tid, device_id: currentDeviceId });
+// 3. 掃描處理流程 (同步接收、非同步安全解耦，徹底杜絕相機回調被阻塞)
+function onScan(decodedText) {
+  try {
+    if (!decodedText || typeof decodedText !== "string" || !decodedText.startsWith("v1.")) {
+      logSecurityIncident("INVALID_FORMAT", { raw: String(decodedText), device_id: currentDeviceId });
       renderCardError(t("verifyFail"), t("forgedTicket"));
-    } else {
-      updateLogVerifiedStatus(logRef, "valid");
+      return;
     }
-  });
+
+    const parts = decodedText.split(".");
+    if (parts.length !== 3) {
+      renderCardError(t("verifyFail"), t("forgedTicket"));
+      return;
+    }
+
+    const [_, tid, sigHex] = parts;
+    const guest = manifest ? manifest[tid] : null;
+
+    if (!guest) {
+      logSecurityIncident("NOT_FOUND", { tid, device_id: currentDeviceId });
+      renderCardError(t("unknownTicket"), t("gotoHelpDesk"));
+      return;
+    }
+
+    const isDuplicate = inMemoryScannedSet.has(tid);
+    if (isDuplicate) {
+      logSecurityIncident("DUPLICATE_ALERT", { tid, device_id: currentDeviceId });
+    }
+
+    // 立即秒級反應：震動、變換卡片、更新計數
+    renderCardSuccess(guest, isDuplicate);
+    
+    const logRef = recordCheckIn({
+      tid,
+      device_id: currentDeviceId,
+      scanned_at: new Date().toISOString(),
+      table_no: guest.table || "--",
+      method: "scan",
+      verified: "pending"
+    });
+    updateTally();
+
+    // 背景非同步驗簽，使用 catch 完整捕獲，決不丟出 Uncaught Promise
+    verifySignature(tid, sigHex)
+      .then((isValid) => {
+        if (!isValid) {
+          updateLogVerifiedStatus(logRef, "invalid");
+          logSecurityIncident("INVALID_SIG", { tid, device_id: currentDeviceId });
+          renderCardError(t("verifyFail"), t("forgedTicket"));
+        } else {
+          updateLogVerifiedStatus(logRef, "valid");
+        }
+      })
+      .catch((err) => {
+        console.warn("[Verify Warning] 非同步驗簽例外:", err);
+        updateLogVerifiedStatus(logRef, "exempt");
+      });
+  } catch (syncErr) {
+    console.error("[Scan Error] onScan 執行異常:", syncErr);
+  }
 }
 
 // 4. 手動補登獨立通道
 function handleManualCheckIn(tid) {
-  const guest = manifest[tid];
+  const guest = manifest ? manifest[tid] : null;
   if (!guest) return;
 
   const isDuplicate = inMemoryScannedSet.has(tid);
@@ -595,7 +608,6 @@ bindExportAction(async () => {
   try {
     await drainPendingVerifications();
 
-    // 建立已簽到快速檢索 Map (以 tid 為 Key)
     const scanLogMap = new Map();
     inMemoryLogs.forEach(log => {
       if (!scanLogMap.has(log.tid)) {
@@ -603,7 +615,6 @@ bindExportAction(async () => {
       }
     });
 
-    // 取得所有賓客列表
     const allGuests = Object.entries(manifest || {})
       .filter(([k]) => !k.startsWith("__"))
       .map(([tid, info]) => ({
@@ -613,7 +624,6 @@ bindExportAction(async () => {
         phone: info.phone_suffix || info.phone || "--"
       }));
 
-    // CSV 表頭：明確標註【出席狀態】
     const headers = [
       "出席狀態",
       "姓名",
@@ -624,7 +634,7 @@ bindExportAction(async () => {
       "簽到方式",
       "處理工位"
     ];
-    let csv = "\uFEFF" + headers.join(",") + "\n"; // 加入 UTF-8 BOM 避免 Excel 亂碼
+    let csv = "\uFEFF" + headers.join(",") + "\n";
 
     allGuests.forEach(g => {
       const log = scanLogMap.get(g.tid);
@@ -646,7 +656,6 @@ bindExportAction(async () => {
     const filename = `ScanSign_全場賓客出缺席總表_${currentDeviceId}_${timestamp}.csv`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
 
-    // 同步產出資安審計日誌 (若有異常事件)
     const secLogs = getSecurityLogs();
     if (secLogs.length > 0) {
       const secHeaders = ["security_seq", "event_type", "recorded_at", "details"];
