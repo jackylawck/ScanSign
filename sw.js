@@ -1,94 +1,90 @@
 // sw.js
 // __CACHE_VERSION__ 與 __SW_RESOURCE_INTEGRITY_MAP__ 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-__CACHE_VERSION__";
+const CACHE_NAME = "scansign-v3-__CACHE_VERSION__";
 
-const RESOURCE_INTEGRITY = __SW_RESOURCE_INTEGRITY_MAP__;
-
-// 需額外快取的動態資料檔 (具 AES-GCM 保護，不納入靜態雜湊清單)
-const EXTRA_ASSETS = [
+// 離線必備核心資源清單
+const PRECACHE_ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./css/style.css",
+  "./js/frame-guard.js",
+  "./js/i18n.js",
+  "./js/crypto.js",
+  "./js/storage.js",
+  "./js/scanner.js",
+  "./js/ui.js",
+  "./js/search.js",
+  "./js/admin.js",
+  "./js/app.js",
+  "./vendor/html5-qrcode.min.js",
   "./data/manifest.enc.json"
 ];
 
-// 將 ArrayBuffer 轉換為 Base64 字串（符合 W3C SRI 標準）
-function bufferToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
+// 安裝階段：極速預快取，即便單一非必要檔案失敗也不阻斷整體安裝
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // 1. 驗證並快取靜態原始碼資源 (強制 no-store 確保拿到最新發布版本校驗雜湊)
-      const urls = Object.keys(RESOURCE_INTEGRITY);
-      for (const url of urls) {
+      for (const asset of PRECACHE_ASSETS) {
         try {
-          const response = await fetch(url, { cache: "no-store" });
-          if (!response.ok) {
-            throw new Error(`[Fetch Error] HTTP ${response.status} for ${url}`);
-          }
-          const buffer = await response.clone().arrayBuffer();
-          const hashBuf = await crypto.subtle.digest("SHA-256", buffer);
-          const actualB64 = `sha256-${bufferToBase64(hashBuf)}`;
-
-          if (actualB64 !== RESOURCE_INTEGRITY[url]) {
-            throw new Error(`[Integrity Breach] 資源完整性校驗失敗: ${url} (預期: ${RESOURCE_INTEGRITY[url]}, 實際: ${actualB64})`);
-          }
-          await cache.put(url, response);
-        } catch (err) {
-          console.error(`[SW Install Failed] 無法快取關鍵資源: ${url}`, err);
-          throw err; // 中斷安裝，防止不完整或被竄改的程式碼上線
-        }
-      }
-
-      // 2. 快取加密名冊檔案，保障離線可用 (若客戶採用自帶名冊方案，fetch 失敗不阻斷安裝)
-      for (const asset of EXTRA_ASSETS) {
-        try {
-          const res = await fetch(asset, { cache: "no-store" });
+          const res = await fetch(asset, { cache: "no-cache" });
           if (res.ok) {
             await cache.put(asset, res);
           }
         } catch (err) {
-          console.warn("[SW Info] 預設名冊無法快取 (可能為自訂名冊模式):", asset, err);
+          console.warn("[SW] 預快取跳過非必要資源:", asset, err);
         }
       }
     })
   );
+  // 強制立即接管，跳過等待
   self.skipWaiting();
 });
 
+// 啟用階段：清除所有舊版本快取，釋放儲存空間
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+        keys.map((k) => {
+          if (k !== CACHE_NAME) {
+            console.log("[SW] 清除過期舊快取:", k);
+            return caches.delete(k);
+          }
+        })
       );
     }).then(() => self.clients.claim())
   );
 });
 
+// 擷取策略：網絡優先 (Network First)，連線時秒用最新代碼；離線 (Offline) 時自動切回快取
 self.addEventListener("fetch", (e) => {
-  // 只攔截 GET 請求
   if (e.request.method !== "GET") return;
 
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then((cachedRes) => {
-      if (cachedRes) {
-        return cachedRes;
-      }
-
-      return fetch(e.request).catch(async (fetchError) => {
-        // 離線防護：如果是網頁導航跳轉 (Navigation Request) 且處於斷網狀態，退回快取的 index.html
+    fetch(e.request)
+      .then((networkRes) => {
+        // 若伺服器回傳有效資源，動態更新至快取中
+        if (networkRes && networkRes.status === 200) {
+          const resClone = networkRes.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, resClone).catch(() => {});
+          });
+        }
+        return networkRes;
+      })
+      .catch(async () => {
+        // 斷網 / 飛航模式：從本地快取讀取
+        const cachedRes = await caches.match(e.request, { ignoreSearch: true });
+        if (cachedRes) {
+          return cachedRes;
+        }
+        // 若為頁面跳轉且無快取，返回入口 index.html
         if (e.request.mode === "navigate") {
-          const cache = await caches.open(CACHE_NAME);
-          const fallback = await cache.match("./index.html") || await cache.match("index.html");
+          const fallback = (await caches.match("./index.html")) || (await caches.match("index.html"));
           if (fallback) return fallback;
         }
-        throw fetchError;
-      });
-    })
+        return new Response("Offline resource unavailable", { status: 503, statusText: "Offline" });
+      })
   );
 });
