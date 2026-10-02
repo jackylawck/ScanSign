@@ -25,6 +25,7 @@ import { initSearchIndex, handleSearchInput } from './search.js';
 
 let manifest = null;
 let currentDeviceId = "";
+let isUnlocking = false; // 防並發解鎖互斥鎖
 
 // 1. 初始化多語系與 SW
 applyTranslations();
@@ -47,6 +48,39 @@ if ("serviceWorker" in navigator) {
   }).catch(console.warn);
 }
 
+// 📱 PWA 主畫面安裝引導 (適配 Android 與 iOS)
+let deferredPrompt = null;
+const installBtn = document.getElementById("installPwaBtn");
+const iosGuide = document.getElementById("iosInstallGuide");
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+if (!isStandalone) {
+  // Android / Chrome: 攔截原生安裝對話方塊
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) installBtn.classList.remove("hidden");
+  });
+
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        installBtn.classList.add("hidden");
+      }
+      deferredPrompt = null;
+    });
+  }
+
+  // iOS Safari: 顯示加到主畫面教學框
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIos && iosGuide) {
+    iosGuide.classList.remove("hidden");
+  }
+}
+
 // 頂層單一註冊卸載阻斷：雙通道完全對稱守護
 window.addEventListener("beforeunload", (e) => {
   const hasUnsavedCheckins = inMemoryLogs.length > 0 && 
@@ -63,7 +97,10 @@ window.addEventListener("beforeunload", (e) => {
 });
 
 // 2. PIN 解鎖與強制選取工位
-document.getElementById("unlockBtn").addEventListener("click", async () => {
+const unlockBtn = document.getElementById("unlockBtn");
+unlockBtn.addEventListener("click", async () => {
+  if (isUnlocking) return; // 互斥鎖定：防止 PBKDF2 計算期間被連續觸發
+
   const pin = document.getElementById("pinInput").value.trim();
   const stationSelect = document.getElementById("initialDeviceSelect");
   
@@ -78,8 +115,11 @@ document.getElementById("unlockBtn").addEventListener("click", async () => {
 
   if (!pin) return;
 
+  isUnlocking = true;
+  unlockBtn.disabled = true;
+
   try {
-    // 單例 Promise，並發呼叫時後者必等前者完成
+    // 單例 Promise 快取，保證底層預載就位
     await initStorage();
     const res = await fetch("./data/manifest.enc.json");
     if (!res.ok) throw new Error("Manifest fetch failed");
@@ -104,6 +144,9 @@ document.getElementById("unlockBtn").addEventListener("click", async () => {
     console.error(err);
     logSecurityIncident("DECRYPT_FAIL", { error: err.message, device_id: currentDeviceId || "UNSET" });
     document.getElementById("pinError").textContent = t("pinError");
+  } finally {
+    isUnlocking = false;
+    unlockBtn.disabled = false;
   }
 });
 
