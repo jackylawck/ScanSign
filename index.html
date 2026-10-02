@@ -43,9 +43,9 @@
 
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'none';
-    script-src 'self';
+    script-src 'self' 'unsafe-inline';
     worker-src 'self';
-    style-src 'self';
+    style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob: https://jackylawck.github.io https://api.qrserver.com;
     connect-src 'self';
     manifest-src 'self';
@@ -66,7 +66,7 @@
     <div class="nav-left-tools">
       <button id="openAdminBtn" class="nav-badge-btn nav-admin-btn" type="button" data-i18n="btnAdmin">🛠️ 產票與自訂PIN</button>
       <button id="openGuideBtn" class="nav-badge-btn" type="button" data-i18n="btnGuide">📖 操作指南</button>
-      <button id="openComplianceBtn" class="nav-badge-btn" type="button" data-i18n="btnCompliance">🛡️ 合規與架構</button>
+      <button id="openComplianceBtn" class="nav-badge-btn" type="button" data-i18n="btnCompliance">🛡️️ 合規與架構</button>
     </div>
     <button id="langToggleBtn" class="lang-toggle-btn" type="button">English</button>
   </header>
@@ -214,7 +214,7 @@
   <main id="mainApp" class="hidden">
     <header class="status-bar">
       <div class="station-control-group">
-        <button id="lockScreenBtn" class="nav-badge-btn lock-btn" type="button">🔒 鎖定 / 換名冊</button>
+        <button id="lockScreenBtn" class="nav-badge-btn lock-btn" type="button" data-i18n="btnLockStation">🔒 鎖定 / 換名冊</button>
         <div class="counter-tag" id="currentStationTag">C1</div>
       </div>
       <div class="live-tally"><span data-i18n="checkedInCount">已簽到：</span><span id="scanCountDisplay">0</span></div>
@@ -251,7 +251,7 @@
                placeholder="輸入姓名或電話後 4 碼補登..." 
                data-i18n-placeholder="searchPlaceholder" 
                autocomplete="off">
-        <button type="button" class="btn-primary manual-action-btn" id="manualSearchActionBtn">補登</button>
+        <button type="button" class="btn-primary manual-action-btn" id="manualSearchActionBtn" data-i18n="btnCheckIn">補登</button>
         <button type="button" class="clear-btn" id="clearSearchBtn">✕</button>
       </div>
       <div id="searchResults" class="search-results"></div>
