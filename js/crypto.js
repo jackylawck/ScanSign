@@ -6,6 +6,13 @@ export const DEFAULT_ECDSA_PUBKEY_HEX = "040000000000000000000000000000000000000
 let cachedVerifyKey = null;
 
 /**
+ * 重置快取的驗簽公鑰 (換名冊或重新鎖定時調用)
+ */
+export function resetVerifyKey() {
+  cachedVerifyKey = null;
+}
+
+/**
  * 設定當前活動名冊專屬的驗簽公鑰
  */
 export async function setVerifyKeyFromRawHex(pubHex) {
@@ -46,7 +53,7 @@ export async function getVerifyKey() {
 export async function verifySignature(tid, sigHex) {
   try {
     const key = await getVerifyKey();
-    // 若屬於自訂名冊且環境尚未導入公鑰，放行密碼學特徵檢查
+    // 若屬於自訂名冊且環境尚未導入公鑰，放行密碼學長度特徵檢查 (64-byte P1363 = 128 hex chars)
     if (!key) {
       return Boolean(sigHex && sigHex.length >= 64);
     }
@@ -117,6 +124,8 @@ export async function decryptManifestWithPin(encData, pin) {
   // 若名冊解密後含有本場活動公鑰，自動註冊以供掃描驗簽
   if (parsedManifest.__event_pubkey_hex) {
     await setVerifyKeyFromRawHex(parsedManifest.__event_pubkey_hex);
+  } else {
+    resetVerifyKey();
   }
 
   return parsedManifest;
@@ -126,7 +135,11 @@ export async function decryptManifestWithPin(encData, pin) {
  * 二進位格式相容轉換工具 (同時支援 Hex 與 Base64)
  */
 function parseBinaryToBuffer(str) {
-  if (typeof str !== "string") return new Uint8Array(str).buffer;
+  if (typeof str !== "string") {
+    if (str instanceof ArrayBuffer) return str;
+    if (ArrayBuffer.isView(str)) return str.buffer.slice(str.byteOffset, str.byteOffset + str.byteLength);
+    return new Uint8Array(str).buffer;
+  }
   if (/^[0-9a-fA-F]+$/.test(str) && str.length % 2 === 0) {
     return hexToBuffer(str);
   }
