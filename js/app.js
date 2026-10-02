@@ -25,13 +25,33 @@ import { initSearchIndex, handleSearchInput } from './search.js';
 
 let manifest = null;
 let currentDeviceId = "";
-let isUnlocking = false; // 防並發解鎖互斥鎖
-let customManifestData = null; // 存放本地上傳的自訂名冊物件 (方案 B)
+let isUnlocking = false;
+let customManifestData = null;
+let currentUploadedFileName = "";
 
-// 1. 初始化多語系與 SW
+// 1. 初始化多語系與彈窗綁定
 applyTranslations();
 document.getElementById("langToggleBtn").addEventListener("click", () => {
   toggleLang();
+  updateFileTagText();
+});
+
+// 指引彈窗開關
+const guideModal = document.getElementById("guideModal");
+document.getElementById("openGuideBtn").addEventListener("click", () => {
+  guideModal.classList.remove("hidden");
+});
+document.getElementById("closeGuideBtn").addEventListener("click", () => {
+  guideModal.classList.add("hidden");
+});
+
+// 合規架構彈窗開關
+const compModal = document.getElementById("complianceModal");
+document.getElementById("openComplianceBtn").addEventListener("click", () => {
+  compModal.classList.remove("hidden");
+});
+document.getElementById("closeComplianceBtn").addEventListener("click", () => {
+  compModal.classList.add("hidden");
 });
 
 if ("serviceWorker" in navigator) {
@@ -49,7 +69,7 @@ if ("serviceWorker" in navigator) {
   }).catch(console.warn);
 }
 
-// 📱 PWA 主畫面安裝引導 (適配 Android 與 iOS)
+// 📱 PWA 主畫面安裝引導
 let deferredPrompt = null;
 const installBtn = document.getElementById("installPwaBtn");
 const iosGuide = document.getElementById("iosInstallGuide");
@@ -80,11 +100,20 @@ if (!isStandalone) {
   }
 }
 
-// 📁 方案 B：名冊來源切換與本地檔案讀取
+// 📁 名冊來源切換與本地檔案讀取
 const sourceSelect = document.getElementById("manifestSourceSelect");
 const customContainer = document.getElementById("customManifestContainer");
 const fileInput = document.getElementById("manifestFileInput");
 const fileInfo = document.getElementById("manifestFileInfo");
+
+function updateFileTagText() {
+  if (!fileInfo) return;
+  if (currentUploadedFileName) {
+    fileInfo.textContent = `✅ ${t("manifestLoaded")} ${currentUploadedFileName}`;
+  } else {
+    fileInfo.textContent = t("manifestFileUnselected");
+  }
+}
 
 if (sourceSelect) {
   sourceSelect.addEventListener("change", (e) => {
@@ -93,8 +122,9 @@ if (sourceSelect) {
     } else {
       if (customContainer) customContainer.classList.add("hidden");
       customManifestData = null;
+      currentUploadedFileName = "";
       if (fileInput) fileInput.value = "";
-      if (fileInfo) fileInfo.textContent = "尚未選擇檔案";
+      updateFileTagText();
     }
   });
 }
@@ -104,23 +134,25 @@ if (fileInput) {
     const file = e.target.files[0];
     if (!file) return;
 
+    currentUploadedFileName = file.name;
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         customManifestData = JSON.parse(event.target.result);
-        if (fileInfo) fileInfo.textContent = `✅ ${t("manifestLoaded")} ${file.name}`;
+        updateFileTagText();
         const pinError = document.getElementById("pinError");
         if (pinError) pinError.textContent = "";
       } catch (err) {
         customManifestData = null;
-        if (fileInfo) fileInfo.textContent = "❌ 檔案格式錯誤，必須為合法的 JSON";
+        currentUploadedFileName = "";
+        fileInfo.textContent = t("manifestFileError");
       }
     };
     reader.readAsText(file);
   });
 }
 
-// 頂層單一註冊卸載阻斷：雙通道完全對稱守護
+// 頂層單一註冊卸載阻斷
 window.addEventListener("beforeunload", (e) => {
   const hasUnsavedCheckins = inMemoryLogs.length > 0 && 
     (!isIndexedDBAvailable || getPendingCheckinWrites() > 0);
@@ -138,7 +170,7 @@ window.addEventListener("beforeunload", (e) => {
 // 2. PIN 解鎖與強制選取工位
 const unlockBtn = document.getElementById("unlockBtn");
 unlockBtn.addEventListener("click", async () => {
-  if (isUnlocking) return; // 互斥鎖定：防止 PBKDF2 計算期間被連續觸發
+  if (isUnlocking) return;
 
   const pin = document.getElementById("pinInput").value.trim();
   const stationSelect = document.getElementById("initialDeviceSelect");
@@ -150,7 +182,6 @@ unlockBtn.addEventListener("click", async () => {
     return;
   }
 
-  // 方案 B 防呆：若選自訂名冊卻未上傳檔案，及時攔截
   if (selectedSource === "custom" && !customManifestData) {
     document.getElementById("pinError").textContent = t("manifestFileRequired");
     return;
@@ -165,15 +196,12 @@ unlockBtn.addEventListener("click", async () => {
   unlockBtn.disabled = true;
 
   try {
-    // 單例 Promise 快取，保證底層預載就位
     await initStorage();
 
     let encData = null;
     if (selectedSource === "custom") {
-      // 方案 B：直接採用使用者選取的本地名冊物件 (零伺服器外傳)
       encData = customManifestData;
     } else {
-      // 預設演示模式：從靜態資源抓取
       const res = await fetch("./data/manifest.enc.json");
       if (!res.ok) throw new Error("Manifest fetch failed");
       encData = await res.json();
@@ -294,7 +322,7 @@ document.getElementById("clearSearchBtn").addEventListener("click", () => {
   document.getElementById("searchResults").innerHTML = "";
 });
 
-// 5. 強化版 CSV 轉義：補全 \n 防禦，數字欄位保持 Native Number
+// 5. 強化版 CSV 轉義
 function csvEscape(value, isNumeric = false) {
   if (isNumeric && typeof value === "number") {
     return String(value);
