@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ScanSign">
+  <meta name="theme-color" content="#0f172a">
+  <title>一掃簽 ScanSign</title>
+
+  <!-- 1. 外部防點擊劫持守衛 (符合 script-src 'self') -->
+  <script src="js/frame-guard.js"></script>
+
+  <!-- 2. 嚴格 CSP 規範 -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self';
+    worker-src 'self';
+    style-src 'self';
+    img-src 'self' data: blob:;
+    connect-src 'self';
+    manifest-src 'self';
+    base-uri 'none';
+    form-action 'none';
+  ">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- 3. 本地 Vendor 函式庫 (CI 會自動替換 __VENDOR_SRI_HASH__) -->
+  <script src="vendor/html5-qrcode.min.js" 
+          integrity="__VENDOR_SRI_HASH__" 
+          crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <!-- 語言切換浮動按鈕 -->
+  <button id="langToggleBtn" class="lang-toggle-btn" type="button">English</button>
+
+  <!-- 獨立提示條：各自獨立，不相互覆蓋 -->
+  <div id="ramModeNotice" class="banner-notice hidden" data-i18n="ramModeNotice">⚠️ 目前處於純記憶體模式，請勿重新整理頁面</div>
+  <div id="swUpdateNotice" class="banner-notice banner-info hidden" data-i18n="swUpdateNotice">📢 系統有新版本，請於活動結束後再行重新整理。</div>
+  <div id="cameraFallbackNotice" class="banner-notice hidden" data-i18n="cameraFallbackNotice">相機啟動受限，請使用下方手動補登</div>
+
+  <!-- PIN 碼解鎖遮罩 -->
+  <div id="pinLockScreen" class="overlay">
+    <div class="pin-card">
+      <h2 data-i18n="pinTitle">請輸入工作 PIN 碼</h2>
+      <p data-i18n="pinDesc">解密當日名冊並啟用驗票工作台</p>
+      
+      <div class="form-group">
+        <label for="initialDeviceSelect" data-i18n="selectStation">指定工位：</label>
+        <select id="initialDeviceSelect">
+          <option value="" disabled selected data-i18n="selectStationPrompt">-- 請選擇工位 / Select Station --</option>
+          <option value="C1">C1 (掃碼 1 / Scanner 1)</option>
+          <option value="C2">C2 (掃碼 2 / Scanner 2)</option>
+          <option value="C3">C3 (引導台 / Greeter)</option>
+          <option value="C4">C4 (異常台 / Help Desk)</option>
+        </select>
+      </div>
+
+      <input type="password" id="pinInput" maxlength="8" placeholder="PIN" autocomplete="off" inputmode="numeric">
+      <button id="unlockBtn" class="btn-primary" data-i18n="unlockBtn">解鎖系統</button>
+      <div id="pinError" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- 主工作台 (解鎖後顯示) -->
+  <main id="mainApp" class="hidden">
+    <header class="status-bar">
+      <div class="counter-tag" id="currentStationTag">C1</div>
+      <div class="live-tally"><span data-i18n="checkedInCount">已簽到：</span><span id="scanCountDisplay">0</span></div>
+    </header>
+
+    <!-- 相機掃描視窗 -->
+    <section id="reader-container">
+      <div id="reader"></div>
+    </section>
+
+    <!-- 核心結果卡片 (雙視角 DOM) -->
+    <section id="resultCard" class="result-card idle">
+      <!-- 工作人員視角 -->
+      <div class="view-panel view-staff">
+        <div class="card-guest-name" id="staffGuestName" data-i18n="idlePrompt">請出示入場 QR Code</div>
+        <div class="table-number-row">
+          <span class="table-digit" id="staffTableDigit">--</span>
+          <span class="table-unit" id="staffTableUnit" data-i18n="tableUnit">圍</span>
+        </div>
+        <div class="card-location-hint" id="staffLocationHint" data-i18n="idleSub">對準上方鏡頭</div>
+      </div>
+
+      <!-- 賓客視角 (180 度大字) -->
+      <div class="view-panel view-guest">
+        <div class="table-number-row">
+          <span class="table-digit" id="guestTableDigit">--</span>
+          <span class="table-unit" id="guestTableUnit" data-i18n="guestTableUnit">號桌</span>
+        </div>
+        <div class="guest-welcome" id="guestWelcomeText" data-i18n="welcome">歡迎蒞臨</div>
+        <div class="card-location-hint" id="guestLocationHint" data-i18n="pleaseProceed">請入座</div>
+      </div>
+    </section>
+
+    <!-- 手動搜尋補登區 -->
+    <section class="manual-box">
+      <div class="input-wrapper">
+        <input type="text" id="manualInput" class="manual-input" 
+               placeholder="輸入姓名或電話後 4 碼補登..." 
+               data-i18n-placeholder="searchPlaceholder" 
+               autocomplete="off">
+        <button type="button" class="clear-btn" id="clearSearchBtn">✕</button>
+      </div>
+      <div id="searchResults" class="search-results"></div>
+    </section>
+
+    <!-- 底部安全控制列 -->
+    <footer class="footer-tools">
+      <button class="btn-tool" id="flipViewBtn" data-i18n="btnFlipGuest">🔄 翻轉卡片(給賓客看)</button>
+      <button class="btn-tool" id="exportSafeBtn" data-i18n="btnExport">📥 匯出資料</button>
+    </footer>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
