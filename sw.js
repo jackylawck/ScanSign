@@ -1,33 +1,35 @@
 // sw.js
-// v202610020825-c43f7c5 與 {
-  "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
-  "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
-  "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
-  "./js/i18n.js": "sha256-4c9fa5997ca081fab122609fac6f5e708763de9788302fd5412f0fe6e99bab7b",
-  "./js/frame-guard.js": "sha256-56564d7effaae8d5e36906e4ae68501a12cfb7ce90a42fb9e2372fe0d3a952a9",
-  "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
-  "./js/storage.js": "sha256-746454844785e8c9e19d84a2c56b3c078427cd44f92f20585a2fb82ca3897a29",
-  "./js/scanner.js": "sha256-e9726e0abe14ba18e441b9a1f59c019607d47e94737ee8374b71ea58a560b9c7",
-  "./js/ui.js": "sha256-9407fc2566cda88e9440e78d91230e7d3242d60b6fc1ee8f4b1583850f315e5d",
-  "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",
-  "./js/app.js": "sha256-2d8fdda5adbea452efb38c32ba97d63ddcfc8b92d10870e9e27c9bc6d2d71f5a",
-  "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
+// v202610020826-f119f9a 與 {
+  "./index.html": "sha256-92NDD2gP77P5QNXOjn+w/tWcqJaHDLbEh3nK34LgH6A=",
+  "./manifest.webmanifest": "sha256-veXBNM87+QzDCCIDPzRcko6KlktEv7n53Tk+AGAnzL4=",
+  "./css/style.css": "sha256-QIWt1NNWIcQ3esB9P1irha0pAnxCEpoRkexmu0zttj0=",
+  "./js/i18n.js": "sha256-TJ+lmXyggfqxImCfrG9ecIdj3peIMC/VQS8P5umbq3s=",
+  "./js/frame-guard.js": "sha256-VlZNfv+q6NXjaQbkrmhQGhLPt86QpC+54jcv4NOpUqk=",
+  "./js/crypto.js": "sha256-7BLrK2sRAmhzOZQ6S4+znT3xmG8h7TV1OnPG33D+0rI=",
+  "./js/storage.js": "sha256-dGRUhEeF6MnhnYSixWs8B4QnzUT5LyBYWi+4LKOJeik=",
+  "./js/scanner.js": "sha256-6XJuCr4UuhjkQbmh9ZwBlgfUfpRzfug3S3HqWKVgucc=",
+  "./js/ui.js": "sha256-lAf8JWbNqI6UQOeNkSMOfTJC1gtvwe6PSxWDhQ8xXl0=",
+  "./js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
+  "./js/admin.js": "sha256-zOLy8KYO5wO9CTFhorVOQX1ff9Nn8HEJE9pyF0MEpM8=",
+  "./js/app.js": "sha256-LY/dpa2+pFLvs4wyupfWPdz8i5LRCHDp4nybxtLXH1o=",
+  "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020825-c43f7c5";
+const CACHE_NAME = "scansign-core-v202610020826-f119f9a";
 
 const RESOURCE_INTEGRITY = {
-  "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
-  "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
-  "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
-  "./js/i18n.js": "sha256-4c9fa5997ca081fab122609fac6f5e708763de9788302fd5412f0fe6e99bab7b",
-  "./js/frame-guard.js": "sha256-56564d7effaae8d5e36906e4ae68501a12cfb7ce90a42fb9e2372fe0d3a952a9",
-  "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
-  "./js/storage.js": "sha256-746454844785e8c9e19d84a2c56b3c078427cd44f92f20585a2fb82ca3897a29",
-  "./js/scanner.js": "sha256-e9726e0abe14ba18e441b9a1f59c019607d47e94737ee8374b71ea58a560b9c7",
-  "./js/ui.js": "sha256-9407fc2566cda88e9440e78d91230e7d3242d60b6fc1ee8f4b1583850f315e5d",
-  "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",
-  "./js/app.js": "sha256-2d8fdda5adbea452efb38c32ba97d63ddcfc8b92d10870e9e27c9bc6d2d71f5a",
-  "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
+  "./index.html": "sha256-92NDD2gP77P5QNXOjn+w/tWcqJaHDLbEh3nK34LgH6A=",
+  "./manifest.webmanifest": "sha256-veXBNM87+QzDCCIDPzRcko6KlktEv7n53Tk+AGAnzL4=",
+  "./css/style.css": "sha256-QIWt1NNWIcQ3esB9P1irha0pAnxCEpoRkexmu0zttj0=",
+  "./js/i18n.js": "sha256-TJ+lmXyggfqxImCfrG9ecIdj3peIMC/VQS8P5umbq3s=",
+  "./js/frame-guard.js": "sha256-VlZNfv+q6NXjaQbkrmhQGhLPt86QpC+54jcv4NOpUqk=",
+  "./js/crypto.js": "sha256-7BLrK2sRAmhzOZQ6S4+znT3xmG8h7TV1OnPG33D+0rI=",
+  "./js/storage.js": "sha256-dGRUhEeF6MnhnYSixWs8B4QnzUT5LyBYWi+4LKOJeik=",
+  "./js/scanner.js": "sha256-6XJuCr4UuhjkQbmh9ZwBlgfUfpRzfug3S3HqWKVgucc=",
+  "./js/ui.js": "sha256-lAf8JWbNqI6UQOeNkSMOfTJC1gtvwe6PSxWDhQ8xXl0=",
+  "./js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
+  "./js/admin.js": "sha256-zOLy8KYO5wO9CTFhorVOQX1ff9Nn8HEJE9pyF0MEpM8=",
+  "./js/app.js": "sha256-LY/dpa2+pFLvs4wyupfWPdz8i5LRCHDp4nybxtLXH1o=",
+  "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 };
 
 // 需額外快取的動態資料檔 (具 AES-GCM 保護，不納入靜態雜湊清單)
