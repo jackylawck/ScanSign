@@ -37,20 +37,39 @@ export async function safeStartCamera(onScanSuccess) {
     return;
   }
 
+  // 1. 強制鎖定只解 QR_CODE，並啟用原生 BarcodeDetector 硬體加速
   if (!html5QrCode) {
-    html5QrCode = new Html5Qrcode("reader");
+    const formats = window.Html5QrcodeSupportedFormats ? [window.Html5QrcodeSupportedFormats.QR_CODE] : undefined;
+    html5QrCode = new Html5Qrcode("reader", {
+      formatsToSupport: formats,
+      verbose: false,
+      useBarCodeDetectorIfSupported: true
+    });
   }
 
-  // 🚀 全畫面無邊界極速解碼設定：
-  // 1. 移除 qrbox 裁切限制，全視窗範圍內只要出現 QR Code 立即秒解
-  // 2. 提升 fps 至 15，大幅增加抗反光、抗摩爾紋辨識成功率
-  // 3. 啟用原生硬體加速 (BarcodeDetector)
+  // 2. 提供合法且動態適配的 qrbox 函式（恢復白色瞄準框，避免底層 qrRegion 崩潰）
+  const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+    const boxSize = Math.floor(minEdge * 0.75);
+    return {
+      width: Math.max(200, Math.min(boxSize, 300)),
+      height: Math.max(200, Math.min(boxSize, 300))
+    };
+  };
+
   const config = {
     fps: 15,
+    qrbox: qrboxFunction,
     aspectRatio: 1.0,
     disableFlip: true,
     experimentalFeatures: {
       useBarCodeDetectorIfSupported: true
+    },
+    videoConstraints: {
+      facingMode: "environment",
+      focusMode: "continuous",
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
     }
   };
 
@@ -69,7 +88,7 @@ export async function safeStartCamera(onScanSuccess) {
           onScanSuccess(decodedText);
         }
       },
-      () => {} // 忽略常態性無條碼幀錯誤
+      () => {} // 忽略常態性無條碼幀
     );
     cameraState = 'running';
   } catch (err) {
@@ -111,10 +130,8 @@ export function bindVisibilityAutoRecover(onScanSuccess) {
     clearTimeout(resumeDebounceTimer);
 
     if (document.visibilityState === 'hidden') {
-      // 切換至背景/鎖定手機時，立即關閉相機以節省電力並釋放鏡頭硬體
       safeStopCamera();
     } else if (document.visibilityState === 'visible') {
-      // 重新切回網頁時，防抖重啟相機並補回螢幕常亮常駐
       resumeDebounceTimer = setTimeout(async () => {
         await safeStartCamera(currentOnScanSuccess);
         await enableScreenWakeLock();
