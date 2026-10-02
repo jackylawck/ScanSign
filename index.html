@@ -1,34 +1,74 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-HK" prefix="og: https://ogp.me/ns#">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+  
+  <!-- 🔍 Google 站長驗證 -->
+  <meta name="google-site-verification" content="JZ5UohX-CcP_fQV0_DI9VadkKY4ZoTTkUifL88-fIcY">
+
+  <!-- 🔍 基礎 SEO 核心標籤 -->
+  <title>⚡ 一掃簽 ScanSign | 零伺服器離線加密簽到系統</title>
+  <meta name="description" content="一掃簽 (ScanSign) 是一款純前端、零伺服器架構的企業級活動簽到系統。採用 ECDSA P-256 離線驗簽與 AES-256-GCM 名冊加密，支援飛航模式單機作業、去重稽核與極速入場。">
+  <meta name="keywords" content="一掃簽, ScanSign, 離線簽到, 零伺服器, PWA, ECDSA P-256, WebCrypto, QR Code 驗票, 活動報到, 隱私安全, ISO27001">
+  <meta name="author" content="ScanSign Systems">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jackylawck.github.io/ScanSign/">
+
+  <!-- 🌐 Open Graph / Facebook / LinkedIn 社交卡片 -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jackylawck.github.io/ScanSign/">
+  <meta property="og:title" content="⚡ 一掃簽 ScanSign | 企業級離線加密簽到系統">
+  <meta property="og:description" content="一掃即簽，離線入場。純瀏覽器端運算、數學級防偽、嚴格杜絕個資外洩，保障 300 人年會現場秒級流暢核驗。">
+  <meta property="og:image" content="https://jackylawck.github.io/ScanSign/icons/ScanSign512icon.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="一掃簽 ScanSign 官方標誌">
+  <meta property="og:locale" content="zh_HK">
+  <meta property="og:site_name" content="一掃簽 ScanSign">
+
+  <!-- 🐦 Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="⚡ 一掃簽 ScanSign | Offline Check-in PWA">
+  <meta name="twitter:description" content="Zero-server, mathematically unforgeable event check-in powered by ECDSA P-256 & WebCrypto.">
+  <meta name="twitter:image" content="https://jackylawck.github.io/ScanSign/icons/ScanSign512icon.png">
+
+  <!-- 📱 PWA 與行動裝置桌面安裝設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ScanSign">
+  <meta name="apple-mobile-web-app-title" content="一掃簽">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0f172a">
-  <title>一掃簽 ScanSign</title>
+  <meta name="application-name" content="一掃簽 ScanSign">
+  
+  <!-- 📱 桌面圖示連結 (iOS 與各平台快捷圖標) -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/ScanSign192icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/ScanSign192icon.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/ScanSign512icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
 
-  <!-- 1. 外部防點擊劫持守衛 (符合 script-src 'self') -->
-  <script src="js/frame-guard.js"></script>
-
-  <!-- 2. 嚴格 CSP 規範 -->
+  <!-- 🛡️ 企業級安全策略：嚴格 CSP、相機限縮授權與防點擊劫持 -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'none';
     script-src 'self';
     worker-src 'self';
     style-src 'self';
-    img-src 'self' data: blob:;
+    img-src 'self' data: blob: https://jackylawck.github.io;
     connect-src 'self';
     manifest-src 'self';
     base-uri 'none';
     form-action 'none';
   ">
+  <!-- 相機必須開放給 self，其餘敏感權限（麥克風、定位、陀螺儀等）一律完全禁用 -->
+  <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=()">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
 
-  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/style.css">
 
-  <!-- 3. 本地 Vendor 函式庫 (CI 會自動替換 __VENDOR_SRI_HASH__) -->
+  <!-- 1. 外部防點擊劫持守衛 -->
+  <script src="js/frame-guard.js"></script>
+
+  <!-- 2. 本地 Vendor 函式庫 (CI 會自動計算並注入 SRI 雜湊) -->
   <script src="vendor/html5-qrcode.min.js" 
           integrity="__VENDOR_SRI_HASH__" 
           crossorigin="anonymous"></script>
