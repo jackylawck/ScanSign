@@ -1,19 +1,19 @@
 // sw.js
-// v202610020817-ed79bdc 與 {
+// v202610020823-656c95f 與 {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
   "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
   "./js/i18n.js": "sha256-4c9fa5997ca081fab122609fac6f5e708763de9788302fd5412f0fe6e99bab7b",
   "./js/frame-guard.js": "sha256-56564d7effaae8d5e36906e4ae68501a12cfb7ce90a42fb9e2372fe0d3a952a9",
   "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
-  "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
+  "./js/storage.js": "sha256-746454844785e8c9e19d84a2c56b3c078427cd44f92f20585a2fb82ca3897a29",
   "./js/scanner.js": "sha256-e9726e0abe14ba18e441b9a1f59c019607d47e94737ee8374b71ea58a560b9c7",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
   "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",
   "./js/app.js": "sha256-2d8fdda5adbea452efb38c32ba97d63ddcfc8b92d10870e9e27c9bc6d2d71f5a",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020817-ed79bdc";
+const CACHE_NAME = "scansign-core-v202610020823-656c95f";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
@@ -22,7 +22,7 @@ const RESOURCE_INTEGRITY = {
   "./js/i18n.js": "sha256-4c9fa5997ca081fab122609fac6f5e708763de9788302fd5412f0fe6e99bab7b",
   "./js/frame-guard.js": "sha256-56564d7effaae8d5e36906e4ae68501a12cfb7ce90a42fb9e2372fe0d3a952a9",
   "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
-  "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
+  "./js/storage.js": "sha256-746454844785e8c9e19d84a2c56b3c078427cd44f92f20585a2fb82ca3897a29",
   "./js/scanner.js": "sha256-e9726e0abe14ba18e441b9a1f59c019607d47e94737ee8374b71ea58a560b9c7",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
   "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",

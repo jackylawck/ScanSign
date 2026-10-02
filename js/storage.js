@@ -29,6 +29,17 @@ export function getSecurityLogs() {
   return inMemorySecurityLogs.slice();
 }
 
+/**
+ * 清理當前 Session 記憶體暫存 (換名冊或重新鎖定時調用，防止跨活動資料污染)
+ */
+export function clearCurrentSessionMemory() {
+  inMemoryScannedSet.clear();
+  inMemoryLogs.length = 0;
+  inMemorySecurityLogs.length = 0;
+  monotonicSeq = 0;
+  securitySeq = 0;
+}
+
 // 單例 Promise 快取，徹底解決並發連點時的時序穿透
 export function initStorage() {
   if (storageInitPromise) return storageInitPromise;
