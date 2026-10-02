@@ -41,7 +41,7 @@
   <meta name="theme-color" content="#0f172a">
   <meta name="application-name" content="一掃簽 ScanSign">
   
-  <!-- 📱 桌面圖示連結 (iOS 與各平台快捷圖標) -->
+  <!-- 📱 桌面圖示連結 -->
   <link rel="icon" type="image/png" sizes="192x192" href="icons/ScanSign192icon.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icons/ScanSign192icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icons/ScanSign512icon.png">
@@ -63,19 +63,19 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
   <link rel="stylesheet" href="css/style.css">
-
-  <!-- 1. 外部防點擊劫持守衛 -->
   <script src="js/frame-guard.js"></script>
-
-  <!-- 2. 本地 Vendor 函式庫 -->
-  <script src="vendor/html5-qrcode.min.js" 
-          integrity="__VENDOR_SRI_HASH__" 
-          crossorigin="anonymous"></script>
+  <script src="vendor/html5-qrcode.min.js" integrity="__VENDOR_SRI_HASH__" crossorigin="anonymous"></script>
 </head>
 <body>
 
-  <!-- 語言切換浮動按鈕 -->
-  <button id="langToggleBtn" class="lang-toggle-btn" type="button">English</button>
+  <!-- 頂部輔助功能列 -->
+  <header class="top-nav-bar">
+    <div class="nav-left-tools">
+      <button id="openGuideBtn" class="nav-badge-btn" type="button" data-i18n="btnGuide">📖 操作指南</button>
+      <button id="openComplianceBtn" class="nav-badge-btn" type="button" data-i18n="btnCompliance">🛡️ 合規與架構</button>
+    </div>
+    <button id="langToggleBtn" class="lang-toggle-btn" type="button">English</button>
+  </header>
 
   <!-- 獨立提示條 -->
   <div id="ramModeNotice" class="banner-notice hidden" data-i18n="ramModeNotice">⚠️ 目前處於純記憶體模式，請勿重新整理頁面</div>
@@ -88,7 +88,7 @@
       <h2 data-i18n="pinTitle">請輸入工作 PIN 碼</h2>
       <p data-i18n="pinDesc">解密當日名冊並啟用驗票工作台</p>
       
-      <!-- 方案 B：自帶名冊選取區 -->
+      <!-- 方案 B：自帶名冊選取區 (全雙語標記) -->
       <div class="form-group">
         <label for="manifestSourceSelect" data-i18n="selectManifestSource">活動名冊來源：</label>
         <select id="manifestSourceSelect">
@@ -97,11 +97,11 @@
         </select>
       </div>
 
-      <!-- 自訂名冊檔案上傳區 (預設隱藏) -->
+      <!-- 自訂名冊檔案上傳區 -->
       <div id="customManifestContainer" class="form-group hidden">
         <label for="manifestFileInput" data-i18n="uploadManifestLabel">選擇加密名冊檔案：</label>
         <input type="file" id="manifestFileInput" accept=".json,.enc.json" class="file-input-control">
-        <div id="manifestFileInfo" class="file-status-tag">尚未選擇檔案</div>
+        <div id="manifestFileInfo" class="file-status-tag" data-i18n="manifestFileUnselected">尚未選擇檔案</div>
       </div>
 
       <div class="form-group">
@@ -126,6 +126,50 @@
       <div id="iosInstallGuide" class="banner-notice ios-guide-box hidden" data-i18n="iosInstallGuide">
         💡 iOS 用戶：請點擊 Safari 底部的「分享」圖示 ⎋，然後選擇「加入主畫面」以獲得全螢幕流暢體驗。
       </div>
+    </div>
+  </div>
+
+  <!-- 📖 操作指南彈窗 -->
+  <div id="guideModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 data-i18n="guideTitle">一掃簽 ScanSign | 使用說明</h3>
+      <div class="modal-content">
+        <div class="guide-item">
+          <strong data-i18n="guideStep1Title">1. 示範體驗</strong>
+          <p data-i18n="guideStep1Desc">名冊來源選擇「示範名冊 (內建 Demo)」，工位選擇「C1」，PIN 碼輸入「8899」即可解鎖測試。</p>
+        </div>
+        <div class="guide-item">
+          <strong data-i18n="guideStep2Title">2. 正式活動 (主辦方)</strong>
+          <p data-i18n="guideStep2Desc">執行後台 scripts/generate_event.py 產票並加密名冊。將產出的 manifest.enc.json 傳遞給現場工作人員。</p>
+        </div>
+        <div class="guide-item">
+          <strong data-i18n="guideStep3Title">3. 現場離線驗票</strong>
+          <p data-i18n="guideStep3Desc">工作人員選擇「📁 自行載入名冊」，上傳該檔案並輸入現場 PIN 碼解鎖。設備可切換為飛行模式斷網運作。</p>
+        </div>
+        <div class="guide-item">
+          <strong data-i18n="guideStep4Title">4. 去重與匯出</strong>
+          <p data-i18n="guideStep4Desc">系統以 ECDSA P-256 毫秒級驗簽並標記重複票券。結束後點擊「匯出資料」即可下載 CSV 入場總表。</p>
+        </div>
+      </div>
+      <button id="closeGuideBtn" class="btn-primary modal-close-btn" data-i18n="btnClose">關閉</button>
+    </div>
+  </div>
+
+  <!-- 🛡️ 合規與法規說明彈窗 -->
+  <div id="complianceModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 data-i18n="complianceTitle">🛡️ 全球法規遵從與治理架構說明</h3>
+      <div class="modal-content">
+        <div class="guide-item">
+          <strong data-i18n="compNonAiTitle">🤖 人工智慧法規排除判定 (EU AI Act / ISO 42001 / CAC)</strong>
+          <p data-i18n="compNonAiDesc">本系統架構屬純確定性演算法（Deterministic Algorithmic System），依賴 Web Crypto API 數學運算，完全不具備自主推論、訓練或預測模型，依法排除於 EU AI Act 第 3(1) 條、ISO/IEC 42001 (AIMS) 及國家網信辦演算法備案管轄範疇。</p>
+        </div>
+        <div class="guide-item">
+          <strong data-i18n="compPrivacyTitle">🔒 資料隱私與安全實踐 (HK PDPO / GDPR / ISO 27001)</strong>
+          <p data-i18n="compPrivacyDesc">落實預設隱私（Privacy by Design）：純端側解密，零伺服器外傳。符合香港個人資料（私隱）條例第 1 至 4 保障原則、歐盟 GDPR 第 25/32 條及 ISO/IEC 27001/27701 密碼學存取控制規範。</p>
+        </div>
+      </div>
+      <button id="closeComplianceBtn" class="btn-primary modal-close-btn" data-i18n="btnClose">關閉</button>
     </div>
   </div>
 
