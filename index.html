@@ -4,10 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
   
-  <!-- 🔍 Google 站長驗證 -->
   <meta name="google-site-verification" content="JZ5UohX-CcP_fQV0_DI9VadkKY4ZoTTkUifL88-fIcY">
 
-  <!-- 🔍 基礎 SEO 核心標籤 -->
   <title>⚡ 一掃簽 ScanSign | 零伺服器離線加密簽到系統</title>
   <meta name="description" content="一掃簽 (ScanSign) 是一款純前端、零伺服器架構的企業級活動簽到系統。採用 ECDSA P-256 離線驗簽與 AES-256-GCM 名冊加密，支援飛航模式單機作業、去重稽核與極速入場。">
   <meta name="keywords" content="一掃簽, ScanSign, 離線簽到, 零伺服器, PWA, ECDSA P-256, WebCrypto, QR Code 驗票, 活動報到, 隱私安全, ISO27001">
@@ -15,7 +13,6 @@
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jackylawck.github.io/ScanSign/">
 
-  <!-- 🌐 Open Graph / Facebook / LinkedIn 社交卡片 -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://jackylawck.github.io/ScanSign/">
   <meta property="og:title" content="⚡ 一掃簽 ScanSign | 企業級離線加密簽到系統">
@@ -27,13 +24,11 @@
   <meta property="og:locale" content="zh_HK">
   <meta property="og:site_name" content="一掃簽 ScanSign">
 
-  <!-- 🐦 Twitter Cards -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="⚡ 一掃簽 ScanSign | Offline Check-in PWA">
   <meta name="twitter:description" content="Zero-server, mathematically unforgeable event check-in powered by ECDSA P-256 & WebCrypto.">
   <meta name="twitter:image" content="https://jackylawck.github.io/ScanSign/icons/ScanSign512icon.png">
 
-  <!-- 📱 PWA 與行動裝置桌面安裝設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="一掃簽">
@@ -41,13 +36,11 @@
   <meta name="theme-color" content="#0f172a">
   <meta name="application-name" content="一掃簽 ScanSign">
   
-  <!-- 📱 桌面圖示連結 -->
   <link rel="icon" type="image/png" sizes="192x192" href="icons/ScanSign192icon.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icons/ScanSign192icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="icons/ScanSign512icon.png">
   <link rel="manifest" href="manifest.webmanifest">
 
-  <!-- 🛡️ 企業級安全策略：嚴格 CSP、相機限縮授權與防點擊劫持 -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'none';
     script-src 'self';
@@ -68,9 +61,10 @@
 </head>
 <body>
 
-  <!-- 頂部輔助功能列 -->
+  <!-- 頂部功能列：左側支援指南、合規與產票後台 -->
   <header class="top-nav-bar">
     <div class="nav-left-tools">
+      <button id="openAdminBtn" class="nav-badge-btn nav-admin-btn" type="button" data-i18n="btnAdmin">🛠️ 產票與自訂PIN</button>
       <button id="openGuideBtn" class="nav-badge-btn" type="button" data-i18n="btnGuide">📖 操作指南</button>
       <button id="openComplianceBtn" class="nav-badge-btn" type="button" data-i18n="btnCompliance">🛡️ 合規與架構</button>
     </div>
@@ -88,7 +82,6 @@
       <h2 data-i18n="pinTitle">請輸入工作 PIN 碼</h2>
       <p data-i18n="pinDesc">解密當日名冊並啟用驗票工作台</p>
       
-      <!-- 方案 B：自帶名冊選取區 (全雙語標記) -->
       <div class="form-group">
         <label for="manifestSourceSelect" data-i18n="selectManifestSource">活動名冊來源：</label>
         <select id="manifestSourceSelect">
@@ -97,7 +90,6 @@
         </select>
       </div>
 
-      <!-- 自訂名冊檔案上傳區 -->
       <div id="customManifestContainer" class="form-group hidden">
         <label for="manifestFileInput" data-i18n="uploadManifestLabel">選擇加密名冊檔案：</label>
         <input type="file" id="manifestFileInput" accept=".json,.enc.json" class="file-input-control">
@@ -119,13 +111,49 @@
       <button id="unlockBtn" class="btn-primary" data-i18n="unlockBtn">解鎖系統</button>
       <div id="pinError" class="error-msg"></div>
 
-      <!-- 📱 PWA 安裝按鈕與 iOS 提示 -->
       <button id="installPwaBtn" class="btn-tool pwa-install-btn hidden" type="button" data-i18n="installPwaBtn">
         📲 加入手機主畫面 (安裝 App)
       </button>
       <div id="iosInstallGuide" class="banner-notice ios-guide-box hidden" data-i18n="iosInstallGuide">
         💡 iOS 用戶：請點擊 Safari 底部的「分享」圖示 ⎋，然後選擇「加入主畫面」以獲得全螢幕流暢體驗。
       </div>
+    </div>
+  </div>
+
+  <!-- 🛠️ 主辦方產票與自訂 PIN 工具彈窗 (Admin Console) -->
+  <div id="adminModal" class="modal-overlay hidden">
+    <div class="modal-card admin-modal-card">
+      <h3 data-i18n="adminTitle">🛠️ 主辦方離線產票與自訂 PIN 系統</h3>
+      <div class="modal-content">
+        <div class="form-group">
+          <label for="adminPinInput" data-i18n="adminSetPinLabel">1. 設定當日工作 PIN 碼 (4-8位數字)：</label>
+          <input type="text" id="adminPinInput" class="admin-input-text" placeholder="例如：202688" maxlength="8" value="202688">
+        </div>
+
+        <div class="form-group">
+          <label for="guestListTextarea" data-i18n="adminGuestListLabel">2. 貼上名冊 (每行：姓名, 桌號, 電話後4碼)：</label>
+          <textarea id="guestListTextarea" class="admin-textarea" rows="5" placeholder="陳大文, 1, 9876&#10;李小明, 2, 6543&#10;張美麗, 1, 1234">陳大文, 1, 9876
+李小明, 2, 6543
+張美麗, 1, 1234
+王志強, 3, 5566
+黃巧欣, 2, 8822</textarea>
+        </div>
+
+        <div id="adminActionBox" class="admin-action-box">
+          <button id="startGenerateBtn" class="btn-primary" type="button" data-i18n="adminBtnGenerate">🚀 密碼學加密並產生檔案</button>
+          <div id="adminProgressText" class="file-status-tag hidden"></div>
+        </div>
+
+        <!-- 產出下載區 -->
+        <div id="adminResultBox" class="admin-result-box hidden">
+          <div class="admin-success-tip" data-i18n="adminSuccessTip">🎉 加密完成！名冊與票券已在本地生成，零上傳安全無虞。</div>
+          <div class="admin-download-row">
+            <button id="downloadManifestBtn" class="btn-tool" type="button" data-i18n="adminBtnDownloadManifest">📥 下載加密名冊 (manifest.enc.json)</button>
+            <button id="downloadTicketsHtmlBtn" class="btn-tool" type="button" data-i18n="adminBtnDownloadTickets">🖨️ 下載可列印票券 (tickets.html)</button>
+          </div>
+        </div>
+      </div>
+      <button id="closeAdminBtn" class="btn-tool modal-close-btn" data-i18n="btnClose">關閉</button>
     </div>
   </div>
 
@@ -140,11 +168,11 @@
         </div>
         <div class="guide-item">
           <strong data-i18n="guideStep2Title">2. 正式活動 (主辦方)</strong>
-          <p data-i18n="guideStep2Desc">執行後台 scripts/generate_event.py 產票並加密名冊。將產出的 manifest.enc.json 傳遞給現場工作人員。</p>
+          <p data-i18n="guideStep2Desc">點擊頂部「🛠️ 產票與自訂PIN」，貼上名單並輸入你想要的 PIN 碼，即可直接在瀏覽器生成專屬 manifest.enc.json。</p>
         </div>
         <div class="guide-item">
           <strong data-i18n="guideStep3Title">3. 現場離線驗票</strong>
-          <p data-i18n="guideStep3Desc">工作人員選擇「📁 自行載入名冊」，上傳該檔案並輸入現場 PIN 碼解鎖。設備可切換為飛行模式斷網運作。</p>
+          <p data-i18n="guideStep3Desc">現場工作人員選擇「📁 自行載入名冊」，上傳該檔案並輸入你剛才自訂的 PIN 碼即可啟動。設備可切換為飛行模式斷網運作。</p>
         </div>
         <div class="guide-item">
           <strong data-i18n="guideStep4Title">4. 去重與匯出</strong>
@@ -180,14 +208,11 @@
       <div class="live-tally"><span data-i18n="checkedInCount">已簽到：</span><span id="scanCountDisplay">0</span></div>
     </header>
 
-    <!-- 相機掃描視窗 -->
     <section id="reader-container">
       <div id="reader"></div>
     </section>
 
-    <!-- 核心結果卡片 (雙視角 DOM) -->
     <section id="resultCard" class="result-card idle">
-      <!-- 工作人員視角 -->
       <div class="view-panel view-staff">
         <div class="card-guest-name" id="staffGuestName" data-i18n="idlePrompt">請出示入場 QR Code</div>
         <div class="table-number-row">
@@ -197,7 +222,6 @@
         <div class="card-location-hint" id="staffLocationHint" data-i18n="idleSub">對準上方鏡頭</div>
       </div>
 
-      <!-- 賓客視角 (180 度大字) -->
       <div class="view-panel view-guest">
         <div class="table-number-row">
           <span class="table-digit" id="guestTableDigit">--</span>
@@ -208,7 +232,6 @@
       </div>
     </section>
 
-    <!-- 手動搜尋補登區 -->
     <section class="manual-box">
       <div class="input-wrapper">
         <input type="text" id="manualInput" class="manual-input" 
@@ -220,7 +243,6 @@
       <div id="searchResults" class="search-results"></div>
     </section>
 
-    <!-- 底部安全控制列 -->
     <footer class="footer-tools">
       <button class="btn-tool" id="flipViewBtn" data-i18n="btnFlipGuest">🔄 翻轉卡片(給賓客看)</button>
       <button class="btn-tool" id="exportSafeBtn" data-i18n="btnExport">📥 匯出資料</button>
