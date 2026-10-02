@@ -10,7 +10,7 @@ export async function generateSigningKeyPair() {
   );
 }
 
-// 2. 針對 Token ID 進行數位簽章 (輸出 64-byte IEEE P1363 Hex 字串)
+// 2. 針對 Token ID 進行數位簽章 (輸出緊湊 Base64URL，大幅降低 QR Code 密度以利秒掃)
 export async function signToken(privateKey, tid) {
   const enc = new TextEncoder();
   const signature = await crypto.subtle.sign(
@@ -18,9 +18,17 @@ export async function signToken(privateKey, tid) {
     privateKey,
     enc.encode(tid)
   );
-  return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  
+  // 轉為 Base64URL 格式 (86 字元，取代原本臃腫的 128 字元 Hex)
+  const bytes = new Uint8Array(signature);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 // 3. 匯出公鑰為 65-Byte Raw Hex (04 + X + Y，長度固定 130 碼，供驗簽快速導入)
