@@ -8,7 +8,6 @@ let lastScanText = "";
 let lastScanTime = 0;
 const SCAN_COOLDOWN_MS = 2000;
 
-// 單例監聽標誌與動態熱更新回調指標
 let visibilityBound = false;
 let currentOnScanSuccess = null;
 
@@ -30,46 +29,37 @@ export async function safeStartCamera(onScanSuccess) {
   const errNotice = document.getElementById("cameraFallbackNotice");
   if (errNotice) errNotice.classList.add("hidden");
 
-  // 確保容器存在且就緒
   const readerElement = document.getElementById("reader");
   if (!readerElement) {
     cameraState = 'idle';
     return;
   }
 
-  // 1. 強制鎖定只解 QR_CODE，並啟用原生 BarcodeDetector 硬體加速
+  // 1. 正確啟用原生 BarcodeDetector：直接傳入頂層布林值，嚴格匹配 vendor 源碼解析邏輯
   if (!html5QrCode) {
-    const formats = window.Html5QrcodeSupportedFormats ? [window.Html5QrcodeSupportedFormats.QR_CODE] : undefined;
     html5QrCode = new Html5Qrcode("reader", {
-      formatsToSupport: formats,
-      verbose: false,
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-      }
+      useBarCodeDetectorIfSupported: true,
+      verbose: false
     });
   }
 
-  // 2. 自適應瞄準框：佔畫面 80%，給予充分識別邊距
+  // 2. 自適應動態瞄準框 (佔可視範圍 70%)
   const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-    const boxSize = Math.floor(minEdge * 0.8);
+    const boxSize = Math.floor(minEdge * 0.7);
     return {
-      width: Math.max(220, Math.min(boxSize, 320)),
-      height: Math.max(220, Math.min(boxSize, 320))
+      width: Math.max(200, Math.min(boxSize, 300)),
+      height: Math.max(200, Math.min(boxSize, 300))
     };
   };
 
+  // 3. 移除強制 aspectRatio，避免 iOS Safari 像素拉伸變形；幀率調整為最穩定的 10 fps
   const config = {
-    fps: 15,
+    fps: 10,
     qrbox: qrboxFunction,
-    aspectRatio: 1.0,
     disableFlip: true,
-    experimentalFeatures: {
-      useBarCodeDetectorIfSupported: true
-    },
     videoConstraints: {
-      facingMode: "environment",
-      focusMode: "continuous"
+      facingMode: "environment"
     }
   };
 
@@ -79,7 +69,7 @@ export async function safeStartCamera(onScanSuccess) {
       config,
       (decodedText) => {
         const now = Date.now();
-        // 關鍵修復：只有在冷卻時間未到時才阻斷；一旦超過冷卻時間，立即放行觸發
+        // 防抖冷卻：未達時間阻斷，超過時間立即放行
         if (decodedText === lastScanText) {
           if (now - lastScanTime < SCAN_COOLDOWN_MS) {
             return;
@@ -97,7 +87,7 @@ export async function safeStartCamera(onScanSuccess) {
           }
         }
       },
-      () => {} // 忽略常態性無條碼幀
+      () => {} // 忽略常態性未偵測到條碼幀
     );
     cameraState = 'running';
   } catch (err) {
@@ -128,7 +118,6 @@ export async function safeStopCamera() {
   }
 }
 
-// 智慧生命週期管理：背景時自動釋放鏡頭省電，回到前景時自動喚醒重啟
 export function bindVisibilityAutoRecover(onScanSuccess) {
   currentOnScanSuccess = onScanSuccess;
 
