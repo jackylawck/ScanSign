@@ -1,5 +1,5 @@
 // sw.js
-// v202610020756-b6607bb 與 {
+// v202610020757-bd39e7b 與 {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
   "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
@@ -9,11 +9,11 @@
   "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
   "./js/scanner.js": "sha256-616fee8e38401d41cc3ad9bd7fe21abcc358f48f9f150dc1204b49bda8110602",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
-  "./js/search.js": "sha256-d7c3d71dfad139221355c4c87899ae0606aa9aca00dd95c3946a4edbcee44976",
+  "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",
   "./js/app.js": "sha256-2197e9899363d95e12b703a50352715677376868c98fced724b487ea726892bc",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020756-b6607bb";
+const CACHE_NAME = "scansign-core-v202610020757-bd39e7b";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
@@ -25,7 +25,7 @@ const RESOURCE_INTEGRITY = {
   "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
   "./js/scanner.js": "sha256-616fee8e38401d41cc3ad9bd7fe21abcc358f48f9f150dc1204b49bda8110602",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
-  "./js/search.js": "sha256-d7c3d71dfad139221355c4c87899ae0606aa9aca00dd95c3946a4edbcee44976",
+  "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",
   "./js/app.js": "sha256-2197e9899363d95e12b703a50352715677376868c98fced724b487ea726892bc",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 };
