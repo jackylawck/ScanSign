@@ -584,13 +584,8 @@ function truncateString(str, maxLen = 1000) {
   return s.length > maxLen ? s.slice(0, maxLen) + "...[truncated]" : s;
 }
 
-// 6. 匯出邏輯
+// 6. 匯出邏輯 (整合全場名冊：一目了然有邊個有到、邊個無到)
 bindExportAction(async () => {
-  if (inMemoryLogs.length === 0) {
-    alert(t("alertNoData"));
-    return;
-  }
-
   const exportBtn = document.getElementById("exportSafeBtn");
   const originalText = exportBtn.textContent;
   
@@ -600,37 +595,62 @@ bindExportAction(async () => {
   try {
     await drainPendingVerifications();
 
-    const headers = [
-      "tid",
-      "scanned_at",
-      "device_id",
-      "table_no",
-      "method",
-      "verified(valid:OK|invalid:FAIL|exempt:MANUAL|pending:TIMEOUT)",
-      "monotonic_seq"
-    ];
-    let csv = headers.join(",") + "\n";
+    // 建立已簽到快速檢索 Map (以 tid 為 Key)
+    const scanLogMap = new Map();
+    inMemoryLogs.forEach(log => {
+      if (!scanLogMap.has(log.tid)) {
+        scanLogMap.set(log.tid, log);
+      }
+    });
 
-    inMemoryLogs.forEach(r => {
+    // 取得所有賓客列表
+    const allGuests = Object.entries(manifest || {})
+      .filter(([k]) => !k.startsWith("__"))
+      .map(([tid, info]) => ({
+        tid,
+        name: info.name || "貴賓",
+        table: info.table || "--",
+        phone: info.phone_suffix || info.phone || "--"
+      }));
+
+    // CSV 表頭：明確標註【出席狀態】
+    const headers = [
+      "出席狀態",
+      "姓名",
+      "桌號/圍號",
+      "電話後4碼",
+      "票券編號(TID)",
+      "簽到時間",
+      "簽到方式",
+      "處理工位"
+    ];
+    let csv = "\uFEFF" + headers.join(",") + "\n"; // 加入 UTF-8 BOM 避免 Excel 亂碼
+
+    allGuests.forEach(g => {
+      const log = scanLogMap.get(g.tid);
+      const isPresent = Boolean(log);
+
       csv += [
-        csvEscape(r.tid),
-        csvEscape(r.scanned_at),
-        csvEscape(r.device_id),
-        csvEscape(r.table_no),
-        csvEscape(r.method),
-        csvEscape(r.verified),
-        csvEscape(r.monotonic_seq, true)
+        csvEscape(isPresent ? "已出席" : "未報到"),
+        csvEscape(g.name),
+        csvEscape(g.table),
+        csvEscape(g.phone),
+        csvEscape(g.tid),
+        csvEscape(isPresent ? log.scanned_at : "--"),
+        csvEscape(isPresent ? (log.method === "scan" ? "掃碼" : "手動補登") : "--"),
+        csvEscape(isPresent ? log.device_id : "--")
       ].join(",") + "\n";
     });
 
     const timestamp = Date.now();
-    const filename = `scansign_${currentDeviceId}_${timestamp}.csv`;
+    const filename = `ScanSign_全場賓客出缺席總表_${currentDeviceId}_${timestamp}.csv`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
 
+    // 同步產出資安審計日誌 (若有異常事件)
     const secLogs = getSecurityLogs();
     if (secLogs.length > 0) {
       const secHeaders = ["security_seq", "event_type", "recorded_at", "details"];
-      let secCsv = secHeaders.join(",") + "\n";
+      let secCsv = "\uFEFF" + secHeaders.join(",") + "\n";
       secLogs.forEach(s => {
         const detailJson = JSON.stringify(s.details);
         const safeDetails = truncateString(detailJson, 1000);
@@ -642,15 +662,15 @@ bindExportAction(async () => {
         ].join(",") + "\n";
       });
       const secBlob = new Blob([secCsv], { type: "text/csv;charset=utf-8;" });
-      downloadBlob(secBlob, `scansign_${currentDeviceId}_security_${timestamp}.csv`);
+      downloadBlob(secBlob, `ScanSign_資安稽核日誌_${currentDeviceId}_${timestamp}.csv`);
     }
 
     if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: "text/csv" })] })) {
       try {
         await navigator.share({
           files: [new File([blob], filename, { type: "text/csv" })],
-          title: "ScanSign Export",
-          text: `Check-in logs for ${currentDeviceId}`
+          title: "ScanSign 賓客出缺席總表",
+          text: `出缺席記錄匯出 - ${currentDeviceId}`
         });
         return;
       } catch (e) {}
