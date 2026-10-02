@@ -103,6 +103,14 @@
       <input type="password" id="pinInput" maxlength="8" placeholder="PIN" autocomplete="off" inputmode="numeric">
       <button id="unlockBtn" class="btn-primary" data-i18n="unlockBtn">解鎖系統</button>
       <div id="pinError" class="error-msg"></div>
+
+      <!-- 📱 PWA 安裝按鈕與 iOS 提示 (無 inline-style，符合 CSP 規範) -->
+      <button id="installPwaBtn" class="btn-tool pwa-install-btn hidden" type="button" data-i18n="installPwaBtn">
+        📲 加入手機主畫面 (安裝 App)
+      </button>
+      <div id="iosInstallGuide" class="banner-notice ios-guide-box hidden" data-i18n="iosInstallGuide">
+        💡 iOS 用戶：請點擊 Safari 底部的「分享」圖示 ⎋，然後選擇「加入主畫面」以獲得全螢幕流暢體驗。
+      </div>
     </div>
   </div>
 
