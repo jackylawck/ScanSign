@@ -30,13 +30,30 @@ export async function safeStartCamera(onScanSuccess) {
   const errNotice = document.getElementById("cameraFallbackNotice");
   if (errNotice) errNotice.classList.add("hidden");
 
+  // 確保容器存在且就緒
+  const readerElement = document.getElementById("reader");
+  if (!readerElement) {
+    cameraState = 'idle';
+    return;
+  }
+
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode("reader");
   }
 
+  // 自適應掃描框尺寸，防止在小螢幕手機上溢出
+  const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+    const boxSize = Math.floor(minEdge * 0.7);
+    return {
+      width: Math.max(180, Math.min(boxSize, 260)),
+      height: Math.max(180, Math.min(boxSize, 260))
+    };
+  };
+
   const config = {
     fps: 10,
-    qrbox: { width: 220, height: 220 },
+    qrbox: qrboxFunction,
     aspectRatio: 1.0,
     disableFlip: true
   };
@@ -67,7 +84,7 @@ export async function safeStartCamera(onScanSuccess) {
 }
 
 export async function safeStopCamera() {
-  if (!html5QrCode) {
+  if (!html5QrCode || cameraState === 'stopping' || cameraState === 'idle') {
     cameraState = 'idle';
     return;
   }
@@ -87,7 +104,7 @@ export async function safeStopCamera() {
   }
 }
 
-// 冪等綁定 + 永保執行最新閉包上下文
+// 智慧生命週期管理：背景時自動釋放鏡頭省電，回到前景時自動喚醒重啟
 export function bindVisibilityAutoRecover(onScanSuccess) {
   currentOnScanSuccess = onScanSuccess;
 
@@ -95,13 +112,17 @@ export function bindVisibilityAutoRecover(onScanSuccess) {
   visibilityBound = true;
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-
     clearTimeout(resumeDebounceTimer);
-    resumeDebounceTimer = setTimeout(async () => {
-      await safeStopCamera();
-      await safeStartCamera(currentOnScanSuccess);
-      await enableScreenWakeLock();
-    }, 300);
+
+    if (document.visibilityState === 'hidden') {
+      // 切換至背景/鎖定手機時，立即關閉相機以節省電力並釋放鏡頭硬體
+      safeStopCamera();
+    } else if (document.visibilityState === 'visible') {
+      // 重新切回網頁時，防抖重啟相機並補回螢幕常亮常駐
+      resumeDebounceTimer = setTimeout(async () => {
+        await safeStartCamera(currentOnScanSuccess);
+        await enableScreenWakeLock();
+      }, 350);
+    }
   });
 }

@@ -1,5 +1,5 @@
 // sw.js
-// v202610020751-a3272a2 與 {
+// v202610020756-b6607bb 與 {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
   "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
@@ -7,13 +7,13 @@
   "./js/frame-guard.js": "sha256-56564d7effaae8d5e36906e4ae68501a12cfb7ce90a42fb9e2372fe0d3a952a9",
   "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
   "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
-  "./js/scanner.js": "sha256-7078d11cf46a836761f5494eaddff0343c0c6d25aea4aaae5ffd35b904933c2a",
+  "./js/scanner.js": "sha256-616fee8e38401d41cc3ad9bd7fe21abcc358f48f9f150dc1204b49bda8110602",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
   "./js/search.js": "sha256-d7c3d71dfad139221355c4c87899ae0606aa9aca00dd95c3946a4edbcee44976",
   "./js/app.js": "sha256-2197e9899363d95e12b703a50352715677376868c98fced724b487ea726892bc",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020751-a3272a2";
+const CACHE_NAME = "scansign-core-v202610020756-b6607bb";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
@@ -23,7 +23,7 @@ const RESOURCE_INTEGRITY = {
   "./js/frame-guard.js": "sha256-56564d7effaae8d5e36906e4ae68501a12cfb7ce90a42fb9e2372fe0d3a952a9",
   "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
   "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
-  "./js/scanner.js": "sha256-7078d11cf46a836761f5494eaddff0343c0c6d25aea4aaae5ffd35b904933c2a",
+  "./js/scanner.js": "sha256-616fee8e38401d41cc3ad9bd7fe21abcc358f48f9f150dc1204b49bda8110602",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
   "./js/search.js": "sha256-d7c3d71dfad139221355c4c87899ae0606aa9aca00dd95c3946a4edbcee44976",
   "./js/app.js": "sha256-2197e9899363d95e12b703a50352715677376868c98fced724b487ea726892bc",
