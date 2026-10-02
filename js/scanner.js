@@ -6,7 +6,7 @@ let activeWakeLock = null;
 
 let lastScanText = "";
 let lastScanTime = 0;
-const SCAN_COOLDOWN_MS = 2000;
+const SCAN_COOLDOWN_MS = 1500;
 
 let visibilityBound = false;
 let currentOnScanSuccess = null;
@@ -35,31 +35,26 @@ export async function safeStartCamera(onScanSuccess) {
     return;
   }
 
-  // 1. 強制明確指定 QR_CODE 格式索引 0，確保 BarcodeDetector 與 zxing 能直接鎖定格式
+  // 1. 純淨初始化，避免傳入多餘格式陣列引發型別錯誤
   if (!html5QrCode) {
-    html5QrCode = new Html5Qrcode("reader", {
-      formatsToSupport: [0], // 0 代表 Html5QrcodeSupportedFormats.QR_CODE
-      useBarCodeDetectorIfSupported: true,
-      verbose: false
-    });
+    html5QrCode = new Html5Qrcode("reader");
   }
 
-  // 2. 自適應動態瞄準框 (取較短邊的 75%)
+  // 2. 自適應瞄準框（取短邊 70%，確保瞄準白框永遠存在）
   const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-    return Math.floor(minEdge * 0.75);
+    const boxSize = Math.floor(minEdge * 0.7);
+    return {
+      width: Math.max(200, Math.min(boxSize, 280)),
+      height: Math.max(200, Math.min(boxSize, 280))
+    };
   };
 
-  // 3. 解決 iOS 模糊問題：要求高清取樣 (ideal 1080p, 最低 720p)，徹底克服電腦螢幕點陣干擾
+  // 3. 專為 iOS Safari 簡化約束：使用純字串 facingMode，杜絕 OverconstrainedError
   const config = {
-    fps: 12,
+    fps: 10,
     qrbox: qrboxFunction,
-    disableFlip: true,
-    videoConstraints: {
-      facingMode: { ideal: "environment" },
-      width: { min: 1280, ideal: 1920 },
-      height: { min: 720, ideal: 1080 }
-    }
+    disableFlip: true
   };
 
   try {
