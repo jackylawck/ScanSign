@@ -131,7 +131,16 @@
         </div>
 
         <div class="form-group">
-          <label for="guestListTextarea" data-i18n="adminGuestListLabel">2. 貼上名冊 (每行：姓名, 桌號, 電話後4碼)：</label>
+          <div class="roster-header-row">
+            <label for="guestListTextarea" data-i18n="adminGuestListLabel" class="roster-label">2. 貼上名冊 (每行：姓名, 桌號, 電話後4碼)：</label>
+            <div class="roster-btn-group">
+              <button id="downloadTemplateBtn" class="nav-badge-btn btn-mini" type="button" data-i18n="btnDownloadTemplate">📥 下載範本</button>
+              <label class="nav-badge-btn btn-mini btn-import-label" data-i18n="btnImportFile">
+                📂 匯入檔案
+                <input type="file" id="importRosterFileInput" accept=".csv,.txt" class="hidden-file-input">
+              </label>
+            </div>
+          </div>
           <textarea id="guestListTextarea" class="admin-textarea" rows="5" placeholder="陳大文, 1, 9876&#10;李小明, 2, 6543&#10;張美麗, 1, 1234">陳大文, 1, 9876
 李小明, 2, 6543
 張美麗, 1, 1234
