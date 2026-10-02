@@ -1,8 +1,8 @@
 // sw.js
-// v202610020721-bfd18b3 與 {
+// v202610020721-3b47fa8 與 {
   "./index.html": "sha256-5bbf61b03eea393668f58aa75091279fedd31582f3082a17886d8602dcd5457b",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
-  "./css/style.css": "sha256-3fb93de5213005c160538d588ecccb5fb494e4ee1c8d4a43601b6e5c7aa36cc6",
+  "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
   "./js/i18n.js": "sha256-72d4e75754c9aebd597a9fc2ba050a6be70400b710a6649d8fbef8a2a9af5e80",
   "./js/frame-guard.js": "sha256-7d227b6b55526b09949b8929352c6ef4b4a577df57608fcec4dd9b9e141ca741",
   "./js/crypto.js": "sha256-ad1bdaca8c64b627ec32758dc83509ad222af9ab91f5f83668dc7e48deb2064f",
@@ -13,12 +13,12 @@
   "./js/app.js": "sha256-81bf0a9fd473a22e9da778c2d416f0f565aa766a1c89affbe1d2a6f5c94f099c",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020721-bfd18b3";
+const CACHE_NAME = "scansign-core-v202610020721-3b47fa8";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-5bbf61b03eea393668f58aa75091279fedd31582f3082a17886d8602dcd5457b",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
-  "./css/style.css": "sha256-3fb93de5213005c160538d588ecccb5fb494e4ee1c8d4a43601b6e5c7aa36cc6",
+  "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
   "./js/i18n.js": "sha256-72d4e75754c9aebd597a9fc2ba050a6be70400b710a6649d8fbef8a2a9af5e80",
   "./js/frame-guard.js": "sha256-7d227b6b55526b09949b8929352c6ef4b4a577df57608fcec4dd9b9e141ca741",
   "./js/crypto.js": "sha256-ad1bdaca8c64b627ec32758dc83509ad222af9ab91f5f83668dc7e48deb2064f",

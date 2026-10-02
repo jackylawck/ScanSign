@@ -33,6 +33,7 @@ body {
 .nav-left-tools {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .nav-badge-btn {
@@ -51,6 +52,12 @@ body {
   background: #334155;
   color: #38bdf8;
   border-color: #38bdf8;
+}
+
+.nav-admin-btn {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
 }
 
 /* 語言切換按鈕 */
@@ -178,7 +185,7 @@ body {
   text-align: left;
 }
 
-/* 彈窗樣式 (指引與合規說明) */
+/* 彈窗樣式 */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -196,11 +203,15 @@ body {
   border-radius: 16px;
   padding: 20px;
   width: 100%;
-  max-width: 460px;
+  max-width: 480px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.admin-modal-card {
+  max-width: 540px;
 }
 
 .modal-card h3 {
@@ -234,6 +245,62 @@ body {
 .modal-close-btn {
   margin-top: 8px;
   height: 42px;
+}
+
+/* 主辦方 Admin 產票專屬控制項 */
+.admin-input-text {
+  width: 100%;
+  height: 44px;
+  background: #0f172a;
+  border: 1px solid #475569;
+  color: #fff;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  margin-top: 4px;
+  outline: none;
+}
+
+.admin-textarea {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #475569;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 4px;
+  outline: none;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.admin-action-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-result-box {
+  background: #0f172a;
+  border: 1px solid #22c55e;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-success-tip {
+  color: #22c55e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-download-row {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
 }
 
 /* 狀態列 */
