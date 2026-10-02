@@ -1,5 +1,5 @@
 // sw.js
-// v202610020829-6447782 與 {
+// v202610020830-48a3610 與 {
   "./index.html": "sha256-92NDD2gP77P5QNXOjn+w/tWcqJaHDLbEh3nK34LgH6A=",
   "./manifest.webmanifest": "sha256-veXBNM87+QzDCCIDPzRcko6KlktEv7n53Tk+AGAnzL4=",
   "./css/style.css": "sha256-ooSqdYAcVHSqSa9ngjwpz/ZDgTOfW8yakN8TAqerlJ8=",
@@ -14,7 +14,7 @@
   "./js/app.js": "sha256-LY/dpa2+pFLvs4wyupfWPdz8i5LRCHDp4nybxtLXH1o=",
   "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020829-6447782";
+const CACHE_NAME = "scansign-core-v202610020830-48a3610";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-92NDD2gP77P5QNXOjn+w/tWcqJaHDLbEh3nK34LgH6A=",
