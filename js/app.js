@@ -22,12 +22,22 @@ import {
 import { safeStartCamera, bindVisibilityAutoRecover, enableScreenWakeLock } from './scanner.js';
 import { renderCardSuccess, renderCardError, bindExportAction } from './ui.js';
 import { initSearchIndex, handleSearchInput } from './search.js';
+import { 
+  generateSigningKeyPair, 
+  signToken, 
+  encryptManifestWithCustomPin, 
+  parseGuestListInput 
+} from './admin.js';
 
 let manifest = null;
 let currentDeviceId = "";
 let isUnlocking = false;
 let customManifestData = null;
 let currentUploadedFileName = "";
+
+// 產票暫存物件
+let generatedEncJson = null;
+let generatedTicketsHtml = null;
 
 // 1. 初始化多語系與彈窗綁定
 applyTranslations();
@@ -36,24 +46,123 @@ document.getElementById("langToggleBtn").addEventListener("click", () => {
   updateFileTagText();
 });
 
-// 指引彈窗開關
+// 彈窗模組開關控制
 const guideModal = document.getElementById("guideModal");
-document.getElementById("openGuideBtn").addEventListener("click", () => {
-  guideModal.classList.remove("hidden");
-});
-document.getElementById("closeGuideBtn").addEventListener("click", () => {
-  guideModal.classList.add("hidden");
-});
+document.getElementById("openGuideBtn").addEventListener("click", () => guideModal.classList.remove("hidden"));
+document.getElementById("closeGuideBtn").addEventListener("click", () => guideModal.classList.add("hidden"));
 
-// 合規架構彈窗開關
 const compModal = document.getElementById("complianceModal");
-document.getElementById("openComplianceBtn").addEventListener("click", () => {
-  compModal.classList.remove("hidden");
-});
-document.getElementById("closeComplianceBtn").addEventListener("click", () => {
-  compModal.classList.add("hidden");
+document.getElementById("openComplianceBtn").addEventListener("click", () => compModal.classList.remove("hidden"));
+document.getElementById("closeComplianceBtn").addEventListener("click", () => compModal.classList.add("hidden"));
+
+const adminModal = document.getElementById("adminModal");
+document.getElementById("openAdminBtn").addEventListener("click", () => adminModal.classList.remove("hidden"));
+document.getElementById("closeAdminBtn").addEventListener("click", () => adminModal.classList.add("hidden"));
+
+// 🛠️ 主辦方前端自訂 PIN 與產票引擎
+document.getElementById("startGenerateBtn").addEventListener("click", async () => {
+  const pin = document.getElementById("adminPinInput").value.trim();
+  const rawList = document.getElementById("guestListTextarea").value.trim();
+  const progressText = document.getElementById("adminProgressText");
+  const resultBox = document.getElementById("adminResultBox");
+
+  if (!pin || pin.length < 4) {
+    alert("請設定至少 4 位數的工作 PIN 碼！");
+    return;
+  }
+
+  const guests = parseGuestListInput(rawList);
+  if (guests.length === 0) {
+    alert("名冊內容不能為空！");
+    return;
+  }
+
+  progressText.classList.remove("hidden");
+  progressText.textContent = "⚡ 正在生成 ECDSA P-256 金鑰對與密碼學簽名...";
+
+  try {
+    const keyPair = await generateSigningKeyPair();
+    const manifestObj = {};
+    const ticketCards = [];
+
+    for (let i = 0; i < guests.length; i++) {
+      const g = guests[i];
+      const tid = `G${String(i + 1).padStart(4, '0')}`;
+      const sigHex = await signToken(keyPair.privateKey, tid);
+      const qrData = `v1.${tid}.${sigHex}`;
+
+      manifestObj[tid] = {
+        name: g.name,
+        table: g.table,
+        phone_suffix: g.phone
+      };
+
+      // 產生純代碼 QR 票券卡片
+      ticketCards.push(`
+        <div class="ticket-card">
+          <h2>${g.name}</h2>
+          <div class="table-info">第 ${g.table} 桌 / 圍</div>
+          <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrData)}" alt="QR">
+          </div>
+          <div class="tid-tag">${tid} | 末4碼: ${g.phone}</div>
+        </div>
+      `);
+    }
+
+    progressText.textContent = `🔒 正在使用自訂 PIN (${pin}) 進行 PBKDF2 與 AES-256-GCM 加密...`;
+    const encryptedData = await encryptManifestWithCustomPin(manifestObj, pin);
+
+    generatedEncJson = JSON.stringify(encryptedData, null, 2);
+    generatedTicketsHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>ScanSign 現場入場憑證列印表</title>
+        <style>
+          body { font-family: -apple-system, sans-serif; padding: 20px; background: #fff; color: #000; }
+          .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+          .ticket-card { border: 2px dashed #000; border-radius: 8px; padding: 14px; text-align: center; page-break-inside: avoid; }
+          h2 { margin: 0 0 6px 0; font-size: 18px; }
+          .table-info { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+          .tid-tag { font-size: 11px; color: #666; margin-top: 6px; }
+          @media print { button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; margin-bottom: 20px; cursor: pointer;">🖨️ 列印所有票券</button>
+        <div class="ticket-grid">
+          ${ticketCards.join('')}
+        </div>
+      </body>
+      </html>
+    `;
+
+    progressText.textContent = `✅ 產票完成！共 ${guests.length} 位賓客。`;
+    resultBox.classList.remove("hidden");
+
+  } catch (err) {
+    console.error(err);
+    alert("產票失敗: " + err.message);
+  }
 });
 
+// 下載加密名冊
+document.getElementById("downloadManifestBtn").addEventListener("click", () => {
+  if (!generatedEncJson) return;
+  const blob = new Blob([generatedEncJson], { type: "application/json" });
+  downloadBlob(blob, "manifest.enc.json");
+});
+
+// 下載可列印票券
+document.getElementById("downloadTicketsHtmlBtn").addEventListener("click", () => {
+  if (!generatedTicketsHtml) return;
+  const blob = new Blob([generatedTicketsHtml], { type: "text/html;charset=utf-8;" });
+  downloadBlob(blob, "tickets.html");
+});
+
+// PWA 註冊與離線
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").then((reg) => {
     if (!navigator.serviceWorker.controller) return;
@@ -100,7 +209,7 @@ if (!isStandalone) {
   }
 }
 
-// 📁 名冊來源切換與本地檔案讀取
+// 名冊檔案切換與上傳讀取
 const sourceSelect = document.getElementById("manifestSourceSelect");
 const customContainer = document.getElementById("customManifestContainer");
 const fileInput = document.getElementById("manifestFileInput");
@@ -152,7 +261,7 @@ if (fileInput) {
   });
 }
 
-// 頂層單一註冊卸載阻斷
+// 卸載防護
 window.addEventListener("beforeunload", (e) => {
   const hasUnsavedCheckins = inMemoryLogs.length > 0 && 
     (!isIndexedDBAvailable || getPendingCheckinWrites() > 0);
