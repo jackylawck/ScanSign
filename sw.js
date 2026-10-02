@@ -1,11 +1,11 @@
 // sw.js
-// v202610020743-11ee3bd 與 {
+// v202610020750-1ebde6c 與 {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
   "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
   "./js/i18n.js": "sha256-4c9fa5997ca081fab122609fac6f5e708763de9788302fd5412f0fe6e99bab7b",
   "./js/frame-guard.js": "sha256-7d227b6b55526b09949b8929352c6ef4b4a577df57608fcec4dd9b9e141ca741",
-  "./js/crypto.js": "sha256-ad1bdaca8c64b627ec32758dc83509ad222af9ab91f5f83668dc7e48deb2064f",
+  "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
   "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
   "./js/scanner.js": "sha256-7078d11cf46a836761f5494eaddff0343c0c6d25aea4aaae5ffd35b904933c2a",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
@@ -13,7 +13,7 @@
   "./js/app.js": "sha256-2197e9899363d95e12b703a50352715677376868c98fced724b487ea726892bc",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020743-11ee3bd";
+const CACHE_NAME = "scansign-core-v202610020750-1ebde6c";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
@@ -21,7 +21,7 @@ const RESOURCE_INTEGRITY = {
   "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
   "./js/i18n.js": "sha256-4c9fa5997ca081fab122609fac6f5e708763de9788302fd5412f0fe6e99bab7b",
   "./js/frame-guard.js": "sha256-7d227b6b55526b09949b8929352c6ef4b4a577df57608fcec4dd9b9e141ca741",
-  "./js/crypto.js": "sha256-ad1bdaca8c64b627ec32758dc83509ad222af9ab91f5f83668dc7e48deb2064f",
+  "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
   "./js/storage.js": "sha256-2d17ea732f85b754712e961c1d6d88a7dc3b2526aae15e4d56f859484a64a9b7",
   "./js/scanner.js": "sha256-7078d11cf46a836761f5494eaddff0343c0c6d25aea4aaae5ffd35b904933c2a",
   "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
