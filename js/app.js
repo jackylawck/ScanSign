@@ -26,6 +26,7 @@ import { initSearchIndex, handleSearchInput } from './search.js';
 let manifest = null;
 let currentDeviceId = "";
 let isUnlocking = false; // 防並發解鎖互斥鎖
+let customManifestData = null; // 存放本地上傳的自訂名冊物件 (方案 B)
 
 // 1. 初始化多語系與 SW
 applyTranslations();
@@ -55,7 +56,6 @@ const iosGuide = document.getElementById("iosInstallGuide");
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
 if (!isStandalone) {
-  // Android / Chrome: 攔截原生安裝對話方塊
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -74,11 +74,50 @@ if (!isStandalone) {
     });
   }
 
-  // iOS Safari: 顯示加到主畫面教學框
   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   if (isIos && iosGuide) {
     iosGuide.classList.remove("hidden");
   }
+}
+
+// 📁 方案 B：名冊來源切換與本地檔案讀取
+const sourceSelect = document.getElementById("manifestSourceSelect");
+const customContainer = document.getElementById("customManifestContainer");
+const fileInput = document.getElementById("manifestFileInput");
+const fileInfo = document.getElementById("manifestFileInfo");
+
+if (sourceSelect) {
+  sourceSelect.addEventListener("change", (e) => {
+    if (e.target.value === "custom") {
+      if (customContainer) customContainer.classList.remove("hidden");
+    } else {
+      if (customContainer) customContainer.classList.add("hidden");
+      customManifestData = null;
+      if (fileInput) fileInput.value = "";
+      if (fileInfo) fileInfo.textContent = "尚未選擇檔案";
+    }
+  });
+}
+
+if (fileInput) {
+  fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        customManifestData = JSON.parse(event.target.result);
+        if (fileInfo) fileInfo.textContent = `✅ ${t("manifestLoaded")} ${file.name}`;
+        const pinError = document.getElementById("pinError");
+        if (pinError) pinError.textContent = "";
+      } catch (err) {
+        customManifestData = null;
+        if (fileInfo) fileInfo.textContent = "❌ 檔案格式錯誤，必須為合法的 JSON";
+      }
+    };
+    reader.readAsText(file);
+  });
 }
 
 // 頂層單一註冊卸載阻斷：雙通道完全對稱守護
@@ -103,10 +142,17 @@ unlockBtn.addEventListener("click", async () => {
 
   const pin = document.getElementById("pinInput").value.trim();
   const stationSelect = document.getElementById("initialDeviceSelect");
+  const selectedSource = sourceSelect ? sourceSelect.value : "default";
   
   if (!stationSelect.value) {
     document.getElementById("pinError").textContent = t("stationRequired");
     stationSelect.focus();
+    return;
+  }
+
+  // 方案 B 防呆：若選自訂名冊卻未上傳檔案，及時攔截
+  if (selectedSource === "custom" && !customManifestData) {
+    document.getElementById("pinError").textContent = t("manifestFileRequired");
     return;
   }
   
@@ -121,9 +167,17 @@ unlockBtn.addEventListener("click", async () => {
   try {
     // 單例 Promise 快取，保證底層預載就位
     await initStorage();
-    const res = await fetch("./data/manifest.enc.json");
-    if (!res.ok) throw new Error("Manifest fetch failed");
-    const encData = await res.json();
+
+    let encData = null;
+    if (selectedSource === "custom") {
+      // 方案 B：直接採用使用者選取的本地名冊物件 (零伺服器外傳)
+      encData = customManifestData;
+    } else {
+      // 預設演示模式：從靜態資源抓取
+      const res = await fetch("./data/manifest.enc.json");
+      if (!res.ok) throw new Error("Manifest fetch failed");
+      encData = await res.json();
+    }
 
     manifest = await decryptManifestWithPin(encData, pin);
     initSearchIndex(manifest);
