@@ -32,6 +32,8 @@ export const DICTIONARY = {
     alertNoData: "目前尚無簽到記錄！",
     warnUnsaved: "現場簽到資料尚未備份匯出，關閉或重新載入將導致資料遺失！確定要離開嗎？",
     exportWaiting: "正在完成背景非同步簽名校驗，請稍候...",
+    installPwaBtn: "📲 加入手機主畫面 (安裝 App)",
+    iosInstallGuide: "💡 iOS 用戶：請點擊 Safari 底部的「分享」圖示 ⎋，然後選擇「加入主畫面」以獲得全螢幕流暢體驗。",
     langName: "English"
   },
   en: {
@@ -66,6 +68,8 @@ export const DICTIONARY = {
     alertNoData: "No check-in logs found!",
     warnUnsaved: "Logs not exported. Reloading will lose unbacked data. Leave?",
     exportWaiting: "Finalizing background cryptographic checks, please wait...",
+    installPwaBtn: "📲 Add to Home Screen (Install App)",
+    iosInstallGuide: "💡 iOS: Tap Share ⎋ at bottom of Safari, then select 'Add to Home Screen' for full-screen experience.",
     langName: "繁體中文"
   }
 };
@@ -86,7 +90,7 @@ export function setLang(lang) {
   document.documentElement.lang = currentLang === "en" ? "en" : "zh-HK";
   applyTranslations();
 
-  // 事件驅動，徹底消除模組載入期的循環依賴
+  // イベント駆動でモジュール間の循環依存を回避
   window.dispatchEvent(new CustomEvent("scansign-lang-changed", { detail: { lang: currentLang } }));
 }
 
