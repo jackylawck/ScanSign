@@ -41,21 +41,17 @@ export async function safeStartCamera(onScanSuccess) {
     html5QrCode = new Html5Qrcode("reader");
   }
 
-  // 自適應掃描框尺寸，防止在小螢幕手機上溢出
-  const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
-    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-    const boxSize = Math.floor(minEdge * 0.7);
-    return {
-      width: Math.max(180, Math.min(boxSize, 260)),
-      height: Math.max(180, Math.min(boxSize, 260))
-    };
-  };
-
+  // 🚀 全畫面無邊界極速解碼設定：
+  // 1. 移除 qrbox 裁切限制，全視窗範圍內只要出現 QR Code 立即秒解
+  // 2. 提升 fps 至 15，大幅增加抗反光、抗摩爾紋辨識成功率
+  // 3. 啟用原生硬體加速 (BarcodeDetector)
   const config = {
-    fps: 10,
-    qrbox: qrboxFunction,
+    fps: 15,
     aspectRatio: 1.0,
-    disableFlip: true
+    disableFlip: true,
+    experimentalFeatures: {
+      useBarCodeDetectorIfSupported: true
+    }
   };
 
   try {
@@ -73,7 +69,7 @@ export async function safeStartCamera(onScanSuccess) {
           onScanSuccess(decodedText);
         }
       },
-      () => {}
+      () => {} // 忽略常態性無條碼幀錯誤
     );
     cameraState = 'running';
   } catch (err) {
