@@ -21,12 +21,40 @@ body {
   display: none !important;
 }
 
-/* 言語切り替えボタン */
+/* 頂部功能列 */
+.top-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 60;
+}
+
+.nav-left-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-badge-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-badge-btn:hover, .nav-badge-btn:active {
+  background: #334155;
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+
+/* 語言切換按鈕 */
 .lang-toggle-btn {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 100;
   background: #334155;
   color: #38bdf8;
   border: 1px solid #475569;
@@ -37,7 +65,7 @@ body {
   cursor: pointer;
 }
 
-/* 通知バナー */
+/* 提示條 */
 .banner-notice {
   background: #b45309;
   color: #fff;
@@ -52,7 +80,7 @@ body {
   background: #0284c7;
 }
 
-/* PIN ロック画面 */
+/* PIN 遮罩與卡片 */
 .overlay {
   position: fixed;
   inset: 0;
@@ -77,24 +105,10 @@ body {
   gap: 14px;
 }
 
-.pin-card h2 {
-  font-size: 20px;
-}
-
-.pin-card p {
-  font-size: 14px;
-  color: #94a3b8;
-}
-
-.form-group {
-  text-align: left;
-}
-
-.form-group label {
-  font-size: 13px;
-  color: #94a3b8;
-}
-
+.pin-card h2 { font-size: 20px; }
+.pin-card p { font-size: 14px; color: #94a3b8; }
+.form-group { text-align: left; }
+.form-group label { font-size: 13px; color: #94a3b8; }
 .form-group select {
   width: 100%;
   margin-top: 4px;
@@ -105,6 +119,20 @@ body {
   padding: 0 10px;
   border-radius: 8px;
   font-size: 15px;
+}
+
+.file-input-control {
+  width: 100%;
+  padding: 8px 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.file-status-tag {
+  font-size: 12px;
+  color: #38bdf8;
+  text-align: left;
+  margin-top: 2px;
 }
 
 #pinInput {
@@ -136,7 +164,6 @@ body {
   min-height: 18px;
 }
 
-/* PWA インストールボタンおよび iOS ガイド */
 .pwa-install-btn {
   margin-top: 8px;
   width: 100%;
@@ -151,7 +178,65 @@ body {
   text-align: left;
 }
 
-/* ステータスバー */
+/* 彈窗樣式 (指引與合規說明) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 150;
+  padding: 20px;
+}
+
+.modal-card {
+  background: #1e293b;
+  border: 1px solid #38bdf8;
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-card h3 {
+  font-size: 18px;
+  color: #38bdf8;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 10px;
+}
+
+.modal-content {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.guide-item strong {
+  display: block;
+  font-size: 14px;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.guide-item p {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.modal-close-btn {
+  margin-top: 8px;
+  height: 42px;
+}
+
+/* 狀態列 */
 .status-bar {
   display: flex;
   justify-content: space-between;
@@ -172,7 +257,7 @@ body {
   font-weight: 700;
 }
 
-/* スキャナービュー */
+/* 掃描預覽 */
 #reader-container {
   width: 100%;
   border-radius: 14px;
@@ -180,12 +265,9 @@ body {
   background: #000;
   min-height: 200px;
 }
+#reader { width: 100%; }
 
-#reader {
-  width: 100%;
-}
-
-/* 結果表示カード */
+/* 結果卡片 */
 .result-card {
   border-radius: 16px;
   padding: 16px;
@@ -217,7 +299,6 @@ body {
   color: #ffffff !important;
 }
 
-/* 緑色点滅アニメーション */
 @keyframes cardGreenFlash {
   0% { box-shadow: 0 0 0 8px #22c55e; }
   100% { box-shadow: 0 0 0 0px transparent; }
@@ -227,7 +308,6 @@ body {
   animation: cardGreenFlash 0.15s ease-out;
 }
 
-/* 2方向視点切り替え */
 .view-panel {
   width: 100%;
   display: flex;
@@ -235,29 +315,16 @@ body {
   align-items: center;
   justify-content: center;
 }
+.view-staff { display: flex; }
+.view-guest { display: none; }
 
-.view-staff {
-  display: flex;
-}
-
-.view-guest {
-  display: none;
-}
-
-body.mode-guest-facing .view-staff {
-  display: none;
-}
-
+body.mode-guest-facing .view-staff { display: none; }
 body.mode-guest-facing .view-guest {
   display: flex;
   transform: rotate(180deg);
 }
 
-.card-guest-name {
-  font-size: 22px;
-  font-weight: 600;
-}
-
+.card-guest-name { font-size: 22px; font-weight: 600; }
 .table-number-row {
   display: flex;
   align-items: baseline;
@@ -265,18 +332,15 @@ body.mode-guest-facing .view-guest {
   gap: 8px;
   margin: 4px 0;
 }
-
 .table-digit {
   font-size: clamp(56px, 20vw, 88px);
   font-weight: 900;
   line-height: 1;
 }
-
 .table-unit {
   font-size: clamp(24px, 8vw, 36px);
   font-weight: 700;
 }
-
 .card-location-hint {
   font-size: 16px;
   font-weight: 700;
@@ -284,26 +348,23 @@ body.mode-guest-facing .view-guest {
   border-radius: 20px;
   background: rgba(0, 0, 0, 0.15);
 }
-
 .guest-welcome {
   font-size: 24px;
   font-weight: 700;
   margin: 6px 0;
 }
 
-/* 手動検索 */
+/* 手動搜尋 */
 .manual-box {
   background: #1e293b;
   border-radius: 14px;
   padding: 12px;
 }
-
 .input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
-
 .manual-input {
   width: 100%;
   height: 52px;
@@ -315,7 +376,6 @@ body.mode-guest-facing .view-guest {
   font-size: 16px;
   outline: none;
 }
-
 .clear-btn {
   position: absolute;
   right: 8px;
@@ -329,11 +389,7 @@ body.mode-guest-facing .view-guest {
   cursor: pointer;
   display: none;
 }
-
-.input-wrapper.has-val .clear-btn {
-  display: block;
-}
-
+.input-wrapper.has-val .clear-btn { display: block; }
 .search-results {
   margin-top: 10px;
   max-height: 160px;
@@ -342,7 +398,6 @@ body.mode-guest-facing .view-guest {
   flex-direction: column;
   gap: 8px;
 }
-
 .search-item {
   height: 52px;
   padding: 0 14px;
@@ -352,7 +407,6 @@ body.mode-guest-facing .view-guest {
   justify-content: space-between;
   align-items: center;
 }
-
 .btn-manual-confirm {
   height: 38px;
   padding: 0 16px;
@@ -365,14 +419,13 @@ body.mode-guest-facing .view-guest {
   cursor: pointer;
 }
 
-/* フッターツールバー */
+/* 工具欄位 */
 .footer-tools {
   margin-top: auto;
   display: flex;
   gap: 10px;
   padding-top: 8px;
 }
-
 .btn-tool {
   flex: 1;
   height: 48px;
@@ -384,17 +437,10 @@ body.mode-guest-facing .view-guest {
   font-weight: 600;
   cursor: pointer;
 }
+.btn-tool:active { background: #334155; }
 
-.btn-tool:active {
-  background: #334155;
-}
-
-/* クリックジャッキング防止モーダル */
-html.frame-blocked {
-  height: 100%;
-  background: #000;
-}
-
+/* 防點擊劫持封鎖樣式 */
+html.frame-blocked { height: 100%; background: #000; }
 .frame-blocked-modal {
   display: flex;
   justify-content: center;
@@ -405,5 +451,5 @@ html.frame-blocked {
   font-size: 22px;
   font-weight: 800;
   text-align: center;
-  padding: 24px;
+  padding: 24px; 
 }
