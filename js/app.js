@@ -59,6 +59,46 @@ const adminModal = document.getElementById("adminModal");
 document.getElementById("openAdminBtn").addEventListener("click", () => adminModal.classList.remove("hidden"));
 document.getElementById("closeAdminBtn").addEventListener("click", () => adminModal.classList.add("hidden"));
 
+// 📥 下載標準 Excel/CSV 範本 (帶 UTF-8 BOM，Excel 雙擊開不會亂碼)
+const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
+if (downloadTemplateBtn) {
+  downloadTemplateBtn.addEventListener("click", () => {
+    const templateCsv = 
+`姓名,桌號,電話後4碼
+陳大文,1,9876
+李小明,2,6543
+張美麗,1,1234
+王志強,3,5566
+黃巧欣,2,8822`;
+
+    const blob = new Blob(["\uFEFF" + templateCsv], { type: "text/csv;charset=utf-8;" });
+    downloadBlob(blob, "ScanSign_名冊範本.csv");
+  });
+}
+
+// 📂 直接選擇 CSV/TXT 檔案自動填入文字框
+const importRosterFileInput = document.getElementById("importRosterFileInput");
+if (importRosterFileInput) {
+  importRosterFileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      let content = event.target.result;
+      if (content.charCodeAt(0) === 0xFEFF) {
+        content = content.slice(1);
+      }
+      const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length > 0 && lines[0].includes("姓名")) {
+        lines.shift();
+      }
+      document.getElementById("guestListTextarea").value = lines.join("\n");
+    };
+    reader.readAsText(file);
+  });
+}
+
 // 🛠️ 主辦方前端自訂 PIN 與產票引擎
 document.getElementById("startGenerateBtn").addEventListener("click", async () => {
   const pin = document.getElementById("adminPinInput").value.trim();
@@ -90,6 +130,7 @@ document.getElementById("startGenerateBtn").addEventListener("click", async () =
       const tid = `G${String(i + 1).padStart(4, '0')}`;
       const sigHex = await signToken(keyPair.privateKey, tid);
       const qrData = `v1.${tid}.${sigHex}`;
+      const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
 
       manifestObj[tid] = {
         name: g.name,
@@ -97,15 +138,16 @@ document.getElementById("startGenerateBtn").addEventListener("click", async () =
         phone_suffix: g.phone
       };
 
-      // 產生純代碼 QR 票券卡片
+      // 產生單張獨立卡片，支援「💾 下載個別圖片」方便 WhatsApp / Email 發送
       ticketCards.push(`
-        <div class="ticket-card">
+        <div class="ticket-card" id="card-${tid}">
           <h2>${g.name}</h2>
-          <div class="table-info">第 ${g.table} 桌 / 圍</div>
+          <div class="table-info">第 ${g.table} 圍 / 桌</div>
           <div class="qr-box">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrData)}" alt="QR">
+            <img src="${qrImgUrl}" alt="QR" crossOrigin="anonymous" id="qr-${tid}">
           </div>
           <div class="tid-tag">${tid} | 末4碼: ${g.phone}</div>
+          <button class="save-btn" onclick="saveSingleTicket('${tid}', '${g.name}')">💾 下載圖檔 (發送用)</button>
         </div>
       `);
     }
@@ -114,27 +156,88 @@ document.getElementById("startGenerateBtn").addEventListener("click", async () =
     const encryptedData = await encryptManifestWithCustomPin(manifestObj, pin);
 
     generatedEncJson = JSON.stringify(encryptedData, null, 2);
+    
+    // 生成包含單張下載、一鍵列印的完整票券平台 HTML
     generatedTicketsHtml = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>ScanSign 現場入場憑證列印表</title>
+        <title>ScanSign 現場入場憑證發送平台</title>
         <style>
-          body { font-family: -apple-system, sans-serif; padding: 20px; background: #fff; color: #000; }
-          .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-          .ticket-card { border: 2px dashed #000; border-radius: 8px; padding: 14px; text-align: center; page-break-inside: avoid; }
-          h2 { margin: 0 0 6px 0; font-size: 18px; }
-          .table-info { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
-          .tid-tag { font-size: 11px; color: #666; margin-top: 6px; }
-          @media print { button { display: none; } }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 24px; background: #f8fafc; color: #0f172a; }
+          .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: #fff; padding: 16px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+          .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+          .ticket-card { border: 2px dashed #94a3b8; border-radius: 12px; padding: 16px; text-align: center; background: #fff; page-break-inside: avoid; display: flex; flex-direction: column; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+          h2 { margin: 0 0 6px 0; font-size: 20px; }
+          .table-info { font-size: 16px; font-weight: bold; color: #2563eb; margin-bottom: 10px; }
+          .qr-box img { width: 180px; height: 180px; display: block; margin: 0 auto; }
+          .tid-tag { font-size: 12px; color: #64748b; margin-top: 8px; }
+          .save-btn { margin-top: 12px; width: 100%; padding: 8px 12px; background: #0f172a; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+          .save-btn:hover { background: #2563eb; }
+          @media print {
+            .header-bar, .save-btn { display: none !important; }
+            body { background: #fff; padding: 0; }
+            .ticket-card { border: 1px solid #000; box-shadow: none; margin-bottom: 10px; }
+          }
         </style>
       </head>
       <body>
-        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; margin-bottom: 20px; cursor: pointer;">🖨️ 列印所有票券</button>
+        <div class="header-bar">
+          <div>
+            <h1 style="margin: 0; font-size: 20px;">🎟️ ScanSign 賓客電子入場券清單</h1>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">共 ${guests.length} 位賓客。點擊卡片下方按鈕即可下載獨立圖片，方便經 WhatsApp / 電郵發送；亦可點擊右上角列印紙本。</p>
+          </div>
+          <button onclick="window.print()" style="padding: 10px 20px; font-size: 15px; font-weight: 700; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer;">🖨️ 列印全場紙本</button>
+        </div>
+
         <div class="ticket-grid">
           ${ticketCards.join('')}
         </div>
+
+        <script>
+          function saveSingleTicket(tid, name) {
+            const card = document.getElementById('card-' + tid);
+            const img = document.getElementById('qr-' + tid);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 520;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 400, 520);
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(10, 10, 380, 500);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 26px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, 200, 60);
+
+            const tableText = card.querySelector('.table-info').textContent;
+            ctx.fillStyle = '#2563eb';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText(tableText, 200, 95);
+
+            ctx.drawImage(img, 65, 120, 270, 270);
+
+            const tagText = card.querySelector('.tid-tag').textContent;
+            ctx.fillStyle = '#64748b';
+            ctx.font = '14px sans-serif';
+            ctx.fillText(tagText, 200, 430);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('入場請向工作人員出示此二維碼', 200, 470);
+
+            const link = document.createElement('a');
+            link.download = name + '_入場券.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+          }
+        <\/script>
       </body>
       </html>
     `;
@@ -155,7 +258,7 @@ document.getElementById("downloadManifestBtn").addEventListener("click", () => {
   downloadBlob(blob, "manifest.enc.json");
 });
 
-// 下載可列印票券
+// 下載可列印/發送票券
 document.getElementById("downloadTicketsHtmlBtn").addEventListener("click", () => {
   if (!generatedTicketsHtml) return;
   const blob = new Blob([generatedTicketsHtml], { type: "text/html;charset=utf-8;" });
