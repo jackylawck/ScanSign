@@ -19,7 +19,7 @@ import {
   getCheckedInCount,
   getSecurityLogs
 } from './storage.js';
-import { safeStartCamera, bindVisibilityAutoRecover, enableScreenWakeLock } from './scanner.js';
+import { safeStartCamera, safeStopCamera, bindVisibilityAutoRecover, enableScreenWakeLock } from './scanner.js';
 import { renderCardSuccess, renderCardError, bindExportAction } from './ui.js';
 import { initSearchIndex, handleSearchInput } from './search.js';
 import { 
@@ -59,20 +59,38 @@ const adminModal = document.getElementById("adminModal");
 document.getElementById("openAdminBtn").addEventListener("click", () => adminModal.classList.remove("hidden"));
 document.getElementById("closeAdminBtn").addEventListener("click", () => adminModal.classList.add("hidden"));
 
-// 📥 下載標準 Excel/CSV 範本 (帶 UTF-8 BOM，Excel 雙擊開不會亂碼)
+// 🔒 返回首頁 / 重新更換工位或名冊
+const lockScreenBtn = document.getElementById("lockScreenBtn");
+if (lockScreenBtn) {
+  lockScreenBtn.addEventListener("click", async () => {
+    await safeStopCamera();
+    document.getElementById("mainApp").classList.add("hidden");
+    document.getElementById("pinLockScreen").classList.remove("hidden");
+    document.getElementById("pinInput").value = "";
+  });
+}
+
+// 📥 下載雙擊直開的 Excel 範本 (.xls 格式，徹底跳過 Windows 匯入字串精靈)
 const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
 if (downloadTemplateBtn) {
   downloadTemplateBtn.addEventListener("click", () => {
-    const templateCsv = 
-`姓名,桌號,電話後4碼
-陳大文,1,9876
-李小明,2,6543
-張美麗,1,1234
-王志強,3,5566
-黃巧欣,2,8822`;
-
-    const blob = new Blob(["\uFEFF" + templateCsv], { type: "text/csv;charset=utf-8;" });
-    downloadBlob(blob, "ScanSign_名冊範本.csv");
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>名冊範本</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
+      <body>
+        <table border="1">
+          <tr><th>姓名</th><th>桌號</th><th>電話後4碼</th></tr>
+          <tr><td>陳大文</td><td>1</td><td>9876</td></tr>
+          <tr><td>李小明</td><td>2</td><td>6543</td></tr>
+          <tr><td>張美麗</td><td>1</td><td>1234</td></tr>
+          <tr><td>王志強</td><td>3</td><td>5566</td></tr>
+          <tr><td>黃巧欣</td><td>2</td><td>8822</td></tr>
+        </table>
+      </body>
+      </html>
+    `;
+    const blob = new Blob([excelHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    downloadBlob(blob, "ScanSign_名冊範本.xls");
   });
 }
 
@@ -153,7 +171,8 @@ document.getElementById("startGenerateBtn").addEventListener("click", async () =
     }
 
     progressText.textContent = `🔒 正在使用自訂 PIN (${pin}) 進行 PBKDF2 與 AES-256-GCM 加密...`;
-    const encryptedData = await encryptManifestWithCustomPin(manifestObj, pin);
+    // 將 keyPair.publicKey 傳入，封裝入名冊實現離線驗簽閉環
+    const encryptedData = await encryptManifestWithCustomPin(manifestObj, pin, keyPair.publicKey);
 
     generatedEncJson = JSON.stringify(encryptedData, null, 2);
     
@@ -526,6 +545,21 @@ manualInput.addEventListener("input", (e) => {
   const val = e.target.value;
   e.target.parentElement.classList.toggle("has-val", val.length > 0);
   handleSearchInput(val, handleManualCheckIn);
+});
+
+// ⌨️ 手動補登按鈕與 Enter 鍵送出監聽
+const manualActionBtn = document.getElementById("manualSearchActionBtn");
+if (manualActionBtn) {
+  manualActionBtn.addEventListener("click", () => {
+    handleSearchInput(manualInput.value, handleManualCheckIn);
+  });
+}
+
+manualInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    handleSearchInput(manualInput.value, handleManualCheckIn);
+  }
 });
 
 document.getElementById("clearSearchBtn").addEventListener("click", () => {
