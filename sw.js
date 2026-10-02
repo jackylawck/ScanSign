@@ -1,5 +1,5 @@
 // sw.js
-// v202610020635-af26d08 與 {
+// v202610020636-d79dd2b 與 {
   "./index.html": "sha256-dcccd1bc3ca843426d384fc8646fa69de48c1d72a0b5728ef6b20df62782b4c3",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
   "./css/style.css": "sha256-09946aba0718261816dd059ec7f63c6af23626dec163be121e7798bdbd35115b",
@@ -13,7 +13,7 @@
   "./js/app.js": "sha256-b1183f4910f03fad4d2aeb6c7acff8886a15b49700f2ce7a112d3a84a7fc0a9b",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020635-af26d08";
+const CACHE_NAME = "scansign-core-v202610020636-d79dd2b";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-dcccd1bc3ca843426d384fc8646fa69de48c1d72a0b5728ef6b20df62782b4c3",
@@ -44,29 +44,37 @@ function bufferToHex(buffer) {
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // 1. 驗證並快取靜態原始碼資源
+      // 1. 驗證並快取靜態原始碼資源 (強制 no-store 確保拿到最新發布版本校驗雜湊)
       const urls = Object.keys(RESOURCE_INTEGRITY);
       for (const url of urls) {
-        const response = await fetch(url);
-        const buffer = await response.clone().arrayBuffer();
-        const hashBuf = await crypto.subtle.digest("SHA-256", buffer);
-        const actualHex = `sha256-${bufferToHex(hashBuf)}`;
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`[Fetch Error] HTTP ${response.status} for ${url}`);
+          }
+          const buffer = await response.clone().arrayBuffer();
+          const hashBuf = await crypto.subtle.digest("SHA-256", buffer);
+          const actualHex = `sha256-${bufferToHex(hashBuf)}`;
 
-        if (actualHex !== RESOURCE_INTEGRITY[url]) {
-          throw new Error(`[Integrity Breach] Resource tampered: ${url}`);
+          if (actualHex !== RESOURCE_INTEGRITY[url]) {
+            throw new Error(`[Integrity Breach] Resource tampered: ${url} (Expected: ${RESOURCE_INTEGRITY[url]}, Got: ${actualHex})`);
+          }
+          await cache.put(url, response);
+        } catch (err) {
+          console.error(`[SW Install Failed] 無法快取關鍵資源: ${url}`, err);
+          throw err; // 中斷安裝，防止不完整或被竄改的程式碼上線
         }
-        await cache.put(url, response);
       }
 
-      // 2. 快取加密名冊檔案，保障離線可用
+      // 2. 快取加密名冊檔案，保障離線可用 (若客戶採用自帶名冊方案 B，fetch 失敗不應阻斷核心安裝)
       for (const asset of EXTRA_ASSETS) {
         try {
-          const res = await fetch(asset);
+          const res = await fetch(asset, { cache: "no-store" });
           if (res.ok) {
             await cache.put(asset, res);
           }
         } catch (err) {
-          console.warn("無法預先快取資產:", asset, err);
+          console.warn("[SW Info] 預設名冊無法快取 (可能為自訂名冊模式):", asset, err);
         }
       }
     })
@@ -85,9 +93,24 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
+  // 只攔截 GET 請求
+  if (e.request.method !== "GET") return;
+
   e.respondWith(
     caches.match(e.request).then((cachedRes) => {
-      return cachedRes || fetch(e.request);
+      if (cachedRes) {
+        return cachedRes;
+      }
+
+      return fetch(e.request).catch(async (fetchError) => {
+        // 離線防護：如果是網頁導航跳轉 (Navigation Request) 且處於斷網狀態，退回快取的 index.html
+        if (e.request.mode === "navigate") {
+          const cache = await caches.open(CACHE_NAME);
+          const fallback = await cache.match("./index.html") || await cache.match("index.html");
+          if (fallback) return fallback;
+        }
+        throw fetchError;
+      });
     })
   );
 });
