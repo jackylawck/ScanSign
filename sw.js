@@ -1,5 +1,5 @@
 // sw.js
-// v202610020828-2f0c1a1 與 {
+// v202610020829-6447782 與 {
   "./index.html": "sha256-92NDD2gP77P5QNXOjn+w/tWcqJaHDLbEh3nK34LgH6A=",
   "./manifest.webmanifest": "sha256-veXBNM87+QzDCCIDPzRcko6KlktEv7n53Tk+AGAnzL4=",
   "./css/style.css": "sha256-ooSqdYAcVHSqSa9ngjwpz/ZDgTOfW8yakN8TAqerlJ8=",
@@ -10,11 +10,11 @@
   "./js/scanner.js": "sha256-6XJuCr4UuhjkQbmh9ZwBlgfUfpRzfug3S3HqWKVgucc=",
   "./js/ui.js": "sha256-lAf8JWbNqI6UQOeNkSMOfTJC1gtvwe6PSxWDhQ8xXl0=",
   "./js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
-  "./js/admin.js": "sha256-zOLy8KYO5wO9CTFhorVOQX1ff9Nn8HEJE9pyF0MEpM8=",
+  "./js/admin.js": "sha256-hIU6e26KK7Uaw9nwh28+bTXcfAJ8fTr4Ae9zWGqqlqc=",
   "./js/app.js": "sha256-LY/dpa2+pFLvs4wyupfWPdz8i5LRCHDp4nybxtLXH1o=",
   "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020828-2f0c1a1";
+const CACHE_NAME = "scansign-core-v202610020829-6447782";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-92NDD2gP77P5QNXOjn+w/tWcqJaHDLbEh3nK34LgH6A=",
@@ -27,7 +27,7 @@ const RESOURCE_INTEGRITY = {
   "./js/scanner.js": "sha256-6XJuCr4UuhjkQbmh9ZwBlgfUfpRzfug3S3HqWKVgucc=",
   "./js/ui.js": "sha256-lAf8JWbNqI6UQOeNkSMOfTJC1gtvwe6PSxWDhQ8xXl0=",
   "./js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
-  "./js/admin.js": "sha256-zOLy8KYO5wO9CTFhorVOQX1ff9Nn8HEJE9pyF0MEpM8=",
+  "./js/admin.js": "sha256-hIU6e26KK7Uaw9nwh28+bTXcfAJ8fTr4Ae9zWGqqlqc=",
   "./js/app.js": "sha256-LY/dpa2+pFLvs4wyupfWPdz8i5LRCHDp4nybxtLXH1o=",
   "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 };
