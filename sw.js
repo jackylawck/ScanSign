@@ -1,5 +1,5 @@
 // sw.js
-// v202610020823-656c95f 與 {
+// v202610020824-68d4e11 與 {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
   "./manifest.webmanifest": "sha256-bde5c134cf3bf90cc30822033f345c928e8a964b44bfb9f9dd393e006027ccbe",
   "./css/style.css": "sha256-4085add4d35621c4377ac07d3f58ab85ad29027c42129a1191ec66bb4cedb63d",
@@ -8,12 +8,12 @@
   "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
   "./js/storage.js": "sha256-746454844785e8c9e19d84a2c56b3c078427cd44f92f20585a2fb82ca3897a29",
   "./js/scanner.js": "sha256-e9726e0abe14ba18e441b9a1f59c019607d47e94737ee8374b71ea58a560b9c7",
-  "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
+  "./js/ui.js": "sha256-9407fc2566cda88e9440e78d91230e7d3242d60b6fc1ee8f4b1583850f315e5d",
   "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",
   "./js/app.js": "sha256-2d8fdda5adbea452efb38c32ba97d63ddcfc8b92d10870e9e27c9bc6d2d71f5a",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020823-656c95f";
+const CACHE_NAME = "scansign-core-v202610020824-68d4e11";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-f763430f680fefb3f940d5ce8e7fb0fed59ca896870cb6c48779cadf82e01fa0",
@@ -24,7 +24,7 @@ const RESOURCE_INTEGRITY = {
   "./js/crypto.js": "sha256-ec12eb2b6b1102687339943a4b8fb39d3df1986f21ed35753a73c6df70fed2b2",
   "./js/storage.js": "sha256-746454844785e8c9e19d84a2c56b3c078427cd44f92f20585a2fb82ca3897a29",
   "./js/scanner.js": "sha256-e9726e0abe14ba18e441b9a1f59c019607d47e94737ee8374b71ea58a560b9c7",
-  "./js/ui.js": "sha256-e0f93dc813d81a6476e67770cf8768df404d5f490cb4146ca8ee3d866bc4e431",
+  "./js/ui.js": "sha256-9407fc2566cda88e9440e78d91230e7d3242d60b6fc1ee8f4b1583850f315e5d",
   "./js/search.js": "sha256-8795973da43532d135f03defc5a649984c107962239fc16626efaf1c92b842f5",
   "./js/app.js": "sha256-2d8fdda5adbea452efb38c32ba97d63ddcfc8b92d10870e9e27c9bc6d2d71f5a",
   "./vendor/html5-qrcode.min.js": "sha256-9992129a1fb98e4e54009a3997cff7d908b324c710420f02f59911cf03ebe778"
