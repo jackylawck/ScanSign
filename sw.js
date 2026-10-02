@@ -1,5 +1,5 @@
 // sw.js
-// v202610020834-1f574b1 與 {
+// v202610020836-dd392ea 與 {
   "./index.html": "sha256-a4E+xMSVMUIm4hHhueteLJbcemMgi9ggalr+JjWt230=",
   "./manifest.webmanifest": "sha256-l6KlKHODnUr2YzQdU64KunXMQMNdB5NW5BN1oI20ne4=",
   "./css/style.css": "sha256-ooSqdYAcVHSqSa9ngjwpz/ZDgTOfW8yakN8TAqerlJ8=",
@@ -14,7 +14,7 @@
   "./js/app.js": "sha256-LY/dpa2+pFLvs4wyupfWPdz8i5LRCHDp4nybxtLXH1o=",
   "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-core-v202610020834-1f574b1";
+const CACHE_NAME = "scansign-core-v202610020836-dd392ea";
 
 const RESOURCE_INTEGRITY = {
   "./index.html": "sha256-a4E+xMSVMUIm4hHhueteLJbcemMgi9ggalr+JjWt230=",
@@ -37,10 +37,14 @@ const EXTRA_ASSETS = [
   "./data/manifest.enc.json"
 ];
 
-function bufferToHex(buffer) {
-  return Array.from(new Uint8Array(buffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+// 將 ArrayBuffer 轉換為 Base64 字串（符合 W3C SRI 標準）
+function bufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 self.addEventListener("install", (e) => {
@@ -56,10 +60,10 @@ self.addEventListener("install", (e) => {
           }
           const buffer = await response.clone().arrayBuffer();
           const hashBuf = await crypto.subtle.digest("SHA-256", buffer);
-          const actualHex = `sha256-${bufferToHex(hashBuf)}`;
+          const actualB64 = `sha256-${bufferToBase64(hashBuf)}`;
 
-          if (actualHex !== RESOURCE_INTEGRITY[url]) {
-            throw new Error(`[Integrity Breach] Resource tampered: ${url} (Expected: ${RESOURCE_INTEGRITY[url]}, Got: ${actualHex})`);
+          if (actualB64 !== RESOURCE_INTEGRITY[url]) {
+            throw new Error(`[Integrity Breach] 資源完整性校驗失敗: ${url} (預期: ${RESOURCE_INTEGRITY[url]}, 實際: ${actualB64})`);
           }
           await cache.put(url, response);
         } catch (err) {
@@ -68,7 +72,7 @@ self.addEventListener("install", (e) => {
         }
       }
 
-      // 2. 快取加密名冊檔案，保障離線可用 (若客戶採用自帶名冊方案 B，fetch 失敗不應阻斷核心安裝)
+      // 2. 快取加密名冊檔案，保障離線可用 (若客戶採用自帶名冊方案，fetch 失敗不阻斷安裝)
       for (const asset of EXTRA_ASSETS) {
         try {
           const res = await fetch(asset, { cache: "no-store" });
@@ -99,7 +103,7 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
 
   e.respondWith(
-    caches.match(e.request).then((cachedRes) => {
+    caches.match(e.request, { ignoreSearch: true }).then((cachedRes) => {
       if (cachedRes) {
         return cachedRes;
       }
