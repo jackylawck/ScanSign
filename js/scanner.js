@@ -35,31 +35,30 @@ export async function safeStartCamera(onScanSuccess) {
     return;
   }
 
-  // 1. 正確啟用原生 BarcodeDetector：直接傳入頂層布林值，嚴格匹配 vendor 源碼解析邏輯
+  // 1. 強制明確指定 QR_CODE 格式索引 0，確保 BarcodeDetector 與 zxing 能直接鎖定格式
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode("reader", {
+      formatsToSupport: [0], // 0 代表 Html5QrcodeSupportedFormats.QR_CODE
       useBarCodeDetectorIfSupported: true,
       verbose: false
     });
   }
 
-  // 2. 自適應動態瞄準框 (佔可視範圍 70%)
+  // 2. 自適應動態瞄準框 (取較短邊的 75%)
   const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-    const boxSize = Math.floor(minEdge * 0.7);
-    return {
-      width: Math.max(200, Math.min(boxSize, 300)),
-      height: Math.max(200, Math.min(boxSize, 300))
-    };
+    return Math.floor(minEdge * 0.75);
   };
 
-  // 3. 移除強制 aspectRatio，避免 iOS Safari 像素拉伸變形；幀率調整為最穩定的 10 fps
+  // 3. 解決 iOS 模糊問題：要求高清取樣 (ideal 1080p, 最低 720p)，徹底克服電腦螢幕點陣干擾
   const config = {
-    fps: 10,
+    fps: 12,
     qrbox: qrboxFunction,
     disableFlip: true,
     videoConstraints: {
-      facingMode: "environment"
+      facingMode: { ideal: "environment" },
+      width: { min: 1280, ideal: 1920 },
+      height: { min: 720, ideal: 1080 }
     }
   };
 
@@ -69,11 +68,8 @@ export async function safeStartCamera(onScanSuccess) {
       config,
       (decodedText) => {
         const now = Date.now();
-        // 防抖冷卻：未達時間阻斷，超過時間立即放行
-        if (decodedText === lastScanText) {
-          if (now - lastScanTime < SCAN_COOLDOWN_MS) {
-            return;
-          }
+        if (decodedText === lastScanText && (now - lastScanTime < SCAN_COOLDOWN_MS)) {
+          return;
         }
         
         lastScanText = decodedText;
@@ -83,11 +79,11 @@ export async function safeStartCamera(onScanSuccess) {
           try {
             onScanSuccess(decodedText);
           } catch (e) {
-            console.error("onScanSuccess 回調執行異常:", e);
+            console.error("onScanSuccess 執行異常:", e);
           }
         }
       },
-      () => {} // 忽略常態性未偵測到條碼幀
+      () => {}
     );
     cameraState = 'running';
   } catch (err) {
