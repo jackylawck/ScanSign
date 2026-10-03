@@ -613,18 +613,27 @@ body.mode-guest-facing .view-guest {
   border-color: #ef4444 !important;
 }
 
-/* 防點擊劫持封鎖樣式 (支援 100dvh 動態高度) */
+/* 防點擊劫持封鎖樣式 (支援 100dvh 動態高度與嚴格 CSP 外部樣式) */
 html.frame-blocked { height: 100%; background: #000; }
 .frame-blocked-modal {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
   height: 100dvh;
   background: #000;
   color: #ef4444;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   text-align: center;
   padding: 24px; 
+}
+
+.frame-blocked-detail {
+  font-size: 14px;
+  color: #94a3b8;
+  font-weight: normal;
+  margin-top: 10px;
+  display: block;
 }
