@@ -31,7 +31,7 @@ export const DICTIONARY = {
     btnFlipGuest: "🔄 翻轉卡片(給賓客看)",
     btnFlipStaff: "📱 切換為工作人員視角",
     btnExport: "📥 匯出資料",
-    btnExportConfirm: "⚠️ 再點一次確認匯出 (3s)",
+    btnExportConfirm: "⚠️ 再點一次確認匯出 (4s)",
     btnCheckIn: "補登",
     statusPresent: "已出席",
     statusAbsent: "未報到",
@@ -42,9 +42,11 @@ export const DICTIONARY = {
     forgedTicket: "偽造票券",
     unknownTicket: "查無此人",
     gotoHelpDesk: "請引導至異常台",
+    phoneSuffix: "末 4 碼",
     alertNoData: "目前尚無簽到記錄！",
     warnUnsaved: "現場簽到資料尚未備份匯出，關閉或重新載入將導致資料遺失！確定要離開嗎？",
     exportWaiting: "正在完成背景非同步簽名校驗，請稍候...",
+    exportFailed: "匯出失敗，請重試或聯絡技術支援",
     installPwaBtn: "📲 加入手機主畫面 (安裝 App)",
     iosInstallGuide: "💡 iOS 用戶：請點擊 Safari 底部的「分享」圖示 ⎋，然後選擇「加入主畫面」以獲得全螢幕流暢體驗。",
     btnGuide: "📖 操作指南",
@@ -107,7 +109,7 @@ export const DICTIONARY = {
     btnFlipGuest: "🔄 Flip View (Guest)",
     btnFlipStaff: "📱 Staff View",
     btnExport: "📥 Export CSV",
-    btnExportConfirm: "⚠️️ Click again to confirm (3s)",
+    btnExportConfirm: "⚠️ Click again to confirm (4s)",
     btnCheckIn: "Check-in",
     statusPresent: "Present",
     statusAbsent: "Absent",
@@ -118,9 +120,11 @@ export const DICTIONARY = {
     forgedTicket: "Forged Ticket",
     unknownTicket: "Guest Not Found",
     gotoHelpDesk: "Direct to Help Desk",
+    phoneSuffix: "Phone",
     alertNoData: "No check-in logs found!",
     warnUnsaved: "Logs not exported. Reloading will lose unbacked data. Leave?",
     exportWaiting: "Finalizing background cryptographic checks, please wait...",
+    exportFailed: "Export failed. Please retry or contact support.",
     installPwaBtn: "📲 Add to Home Screen (Install App)",
     iosInstallGuide: "💡 iOS: Tap Share ⎋ at bottom of Safari, then select 'Add to Home Screen' for full-screen experience.",
     btnGuide: "📖 User Guide",
@@ -154,19 +158,39 @@ export const DICTIONARY = {
   }
 };
 
-let currentLang = localStorage.getItem("scansign_lang") || "zh";
+function getSafeStorageLang() {
+  try {
+    return localStorage.getItem("scansign_lang") || "zh";
+  } catch (e) {
+    return "zh";
+  }
+}
+
+let currentLang = getSafeStorageLang();
 
 export function getLang() {
   return currentLang;
 }
 
+/**
+ * 多語系翻譯取得器 (具備 en 雙層回退機制，避免輸出裸 key)
+ */
 export function t(key) {
-  return (DICTIONARY[currentLang] && DICTIONARY[currentLang][key]) || key;
+  if (!key) return "";
+  if (DICTIONARY[currentLang]?.[key] !== undefined) {
+    return DICTIONARY[currentLang][key];
+  }
+  if (DICTIONARY.en?.[key] !== undefined) {
+    return DICTIONARY.en[key];
+  }
+  return key;
 }
 
 export function setLang(lang) {
   currentLang = lang === "en" ? "en" : "zh";
-  localStorage.setItem("scansign_lang", currentLang);
+  try {
+    localStorage.setItem("scansign_lang", currentLang);
+  } catch (e) {}
   document.documentElement.lang = currentLang === "en" ? "en" : "zh-HK";
   applyTranslations();
   window.dispatchEvent(new CustomEvent("scansign-lang-changed", { detail: { lang: currentLang } }));
@@ -176,23 +200,48 @@ export function toggleLang() {
   setLang(currentLang === "zh" ? "en" : "zh");
 }
 
+/**
+ * 安全 DOM 渲染 (更新文字節點保護圖示子元素，支援 placeholder、aria-label 及 title)
+ */
 export function applyTranslations() {
+  // 1. 純文字更新 (尋找第一個 TextNode 替換，不破壞 <span> 或 <svg>)
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const k = el.getAttribute("data-i18n");
-    if (DICTIONARY[currentLang] && DICTIONARY[currentLang][k]) {
-      el.textContent = DICTIONARY[currentLang][k];
+    const val = t(k);
+    if (!val) return;
+
+    const textNode = Array.from(el.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+    if (textNode) {
+      textNode.textContent = val;
+    } else {
+      el.textContent = val;
     }
   });
 
+  // 2. Placeholder 翻譯
   document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
     const k = el.getAttribute("data-i18n-placeholder");
-    if (DICTIONARY[currentLang] && DICTIONARY[currentLang][k]) {
-      el.setAttribute("placeholder", DICTIONARY[currentLang][k]);
-    }
+    const val = t(k);
+    if (val) el.setAttribute("placeholder", val);
   });
 
+  // 3. W3C 無障礙 aria-label 屬性翻譯
+  document.querySelectorAll("[data-i18n-aria-label]").forEach(el => {
+    const k = el.getAttribute("data-i18n-aria-label");
+    const val = t(k);
+    if (val) el.setAttribute("aria-label", val);
+  });
+
+  // 4. 原生浮動提示 title 屬性翻譯
+  document.querySelectorAll("[data-i18n-title]").forEach(el => {
+    const k = el.getAttribute("data-i18n-title");
+    const val = t(k);
+    if (val) el.setAttribute("title", val);
+  });
+
+  // 5. 切換按鈕提示文字
   const langBtn = document.getElementById("langToggleBtn");
   if (langBtn) {
-    langBtn.textContent = DICTIONARY[currentLang].langName;
+    langBtn.textContent = DICTIONARY[currentLang]?.langName || (currentLang === "zh" ? "English" : "繁體中文");
   }
 }
