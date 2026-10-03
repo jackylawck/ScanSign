@@ -1,5 +1,5 @@
 // sw.js
-// v202610030419-90f1f78 與 {
+// v202610030433-7277b80 與 {
   "./index.html": "sha256-Nkgu/hGB1RrKJgzus7JyLN2I4RRQu8LVG0IpM4az01o=",
   "./manifest.webmanifest": "sha256-l6KlKHODnUr2YzQdU64KunXMQMNdB5NW5BN1oI20ne4=",
   "./css/style.css": "sha256-m2dzUCFFI+z8QxNthQ8JIMzwbL1ZzDNtwCa3gqNUeS4=",
@@ -14,7 +14,7 @@
   "./js/app.js": "sha256-RslXAf0MdgSY4yQJjjYrwSp/5BHm1lp85qrkZqAV/kY=",
   "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-v3-v202610030419-90f1f78";
+const CACHE_NAME = "scansign-v3-v202610030433-7277b80";
 
 // 離線必備核心資源清單
 const PRECACHE_ASSETS = [
