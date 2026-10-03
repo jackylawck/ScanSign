@@ -1,0 +1,21 @@
+# ScanSign 機密金鑰與 PIN (活動離線專用，絕不提交)
+data/event_private_key.pem
+data/event_pin.txt
+
+# 原始未加密名冊 (含個資，防止外洩)
+data/guests.csv
+
+# 產出的 QR Code 圖片目錄 (視活動需求，可選擇不提交公開)
+qrcodes/
+
+# Python 快取與虛擬環境
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# 作業系統暫存檔
+.DS_Store
+Thumbs.db
