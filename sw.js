@@ -1,20 +1,21 @@
 // sw.js
-// v202610030433-7277b80 與 {
-  "./index.html": "sha256-Nkgu/hGB1RrKJgzus7JyLN2I4RRQu8LVG0IpM4az01o=",
-  "./manifest.webmanifest": "sha256-l6KlKHODnUr2YzQdU64KunXMQMNdB5NW5BN1oI20ne4=",
-  "./css/style.css": "sha256-m2dzUCFFI+z8QxNthQ8JIMzwbL1ZzDNtwCa3gqNUeS4=",
-  "./js/i18n.js": "sha256-LlliqTG3R62FMkz84TRNI5vBf2jUqLK0ANlubjdlGKE=",
-  "./js/frame-guard.js": "sha256-/oszFOuTSHyV4fuBPfpeaLkAi65hrKWCGJLYVxi9Tyk=",
-  "./js/crypto.js": "sha256-KWU+PCe8oGJmOyOCj7kkbGwKjVoLRZiizJI+NdGh/4E=",
-  "./js/storage.js": "sha256-dGRUhEeF6MnhnYSixWs8B4QnzUT5LyBYWi+4LKOJeik=",
-  "./js/scanner.js": "sha256-ojBNjg9nRXrt3enFzRwM2xVV+Z3+8jOb2Wyac+5Ge9Y=",
-  "./js/ui.js": "sha256-95jGpLxfUYkdJ0az9MXs5aMf0aT3lW81W3qgeiGOh2A=",
-  "./js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
-  "./js/admin.js": "sha256-OoiLXpPdvNG3bbXD5HZIj4zT4WqpV4MUXA01MMYwtSQ=",
-  "./js/app.js": "sha256-RslXAf0MdgSY4yQJjjYrwSp/5BHm1lp85qrkZqAV/kY=",
-  "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
+// v202610030450-7a676d7 與 {
+  "index.html": "sha256-Nkgu/hGB1RrKJgzus7JyLN2I4RRQu8LVG0IpM4az01o=",
+  "manifest.webmanifest": "sha256-l6KlKHODnUr2YzQdU64KunXMQMNdB5NW5BN1oI20ne4=",
+  "css/style.css": "sha256-m2dzUCFFI+z8QxNthQ8JIMzwbL1ZzDNtwCa3gqNUeS4=",
+  "js/app.js": "sha256-RslXAf0MdgSY4yQJjjYrwSp/5BHm1lp85qrkZqAV/kY=",
+  "js/crypto.js": "sha256-KWU+PCe8oGJmOyOCj7kkbGwKjVoLRZiizJI+NdGh/4E=",
+  "js/scanner.js": "sha256-ojBNjg9nRXrt3enFzRwM2xVV+Z3+8jOb2Wyac+5Ge9Y=",
+  "js/ui.js": "sha256-95jGpLxfUYkdJ0az9MXs5aMf0aT3lW81W3qgeiGOh2A=",
+  "js/i18n.js": "sha256-LlliqTG3R62FMkz84TRNI5vBf2jUqLK0ANlubjdlGKE=",
+  "js/admin.js": "sha256-OoiLXpPdvNG3bbXD5HZIj4zT4WqpV4MUXA01MMYwtSQ=",
+  "js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
+  "js/frame-guard.js": "sha256-/oszFOuTSHyV4fuBPfpeaLkAi65hrKWCGJLYVxi9Tyk=",
+  "vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g=",
+  "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
+  "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-v3-v202610030433-7277b80";
+const CACHE_NAME = "scansign-v3-v202610030450-7a676d7";
 
 // 離線必備核心資源清單
 const PRECACHE_ASSETS = [
