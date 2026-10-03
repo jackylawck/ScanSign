@@ -14,8 +14,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  gap: 12px;
+  min-height: 100dvh; /* 適配 iOS Safari 動態工具列 */
+  gap: 10px;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 .hidden {
@@ -37,6 +39,7 @@ body {
   flex-wrap: wrap;
 }
 
+/* 精準過渡屬性，杜絕 transition: all 造成的舊機卡頓 */
 .nav-badge-btn {
   background: #1e293b;
   color: #94a3b8;
@@ -46,7 +49,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .nav-badge-btn:hover, .nav-badge-btn:active {
@@ -71,11 +74,12 @@ body {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-/* 提示條 */
+/* 提示條與人因色彩分級 */
 .banner-notice {
-  background: #b45309;
+  background: #b45309; /* 預設橙色：一般警告 */
   color: #fff;
   padding: 8px 12px;
   border-radius: 8px;
@@ -84,8 +88,12 @@ body {
   font-weight: 600;
 }
 
+.banner-warning {
+  background: #dc2626; /* 高危險紅色：資料遺失風險 */
+}
+
 .banner-info {
-  background: #0284c7;
+  background: #0284c7; /* 資訊藍色：更新提示 */
 }
 
 /* PIN 遮罩與卡片 */
@@ -143,15 +151,16 @@ body {
   margin-top: 2px;
 }
 
+/* 自適應字級與間距，杜絕 8 位數以上長 PIN 爆框 */
 #pinInput {
   height: 48px;
   background: #0f172a;
   border: 1px solid #475569;
   color: #fff;
   border-radius: 8px;
-  font-size: 24px;
+  font-size: clamp(18px, 5.5vw, 24px);
+  letter-spacing: clamp(2px, 1.2vw, 4px);
   text-align: center;
-  letter-spacing: 6px;
   outline: none;
 }
 
@@ -164,6 +173,11 @@ body {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:active {
+  background: #1d4ed8;
 }
 
 .error-msg {
@@ -181,6 +195,8 @@ body {
   background: #1e293b;
   border: 1px solid #475569;
   margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
   font-size: 12px;
   line-height: 1.5;
   text-align: left;
@@ -206,6 +222,7 @@ body {
   width: 100%;
   max-width: 480px;
   max-height: 85vh;
+  max-height: 85dvh;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -367,22 +384,42 @@ body {
   font-weight: 700;
 }
 
-/* 掃描預覽 */
+/* 掃描預覽容器與動態邊框動畫 */
 #reader-container {
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
   background: #000;
   min-height: 200px;
+  border: 3px solid transparent;
+  transition: border-color 0.2s ease;
 }
+
 #reader { width: 100%; }
 
-/* 結果卡片 */
+/* 相機閃爍邊框動畫（配合 ui.js flashCameraBorder 調用） */
+#reader-container.flash-border-success {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+}
+
+#reader-container.flash-border-duplicate {
+  border-color: #facc15 !important;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
+}
+
+#reader-container.flash-border-error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.5);
+}
+
+/* 結果卡片：改用 flex: 1 與最小高度，完美適應 iPhone SE 等小螢幕 */
 .result-card {
   border-radius: 16px;
-  padding: 16px;
+  padding: 14px;
   text-align: center;
-  min-height: 190px;
+  flex: 1;
+  min-height: clamp(140px, 24vh, 190px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -434,7 +471,7 @@ body.mode-guest-facing .view-guest {
   transform: rotate(180deg);
 }
 
-.card-guest-name { font-size: 22px; font-weight: 600; }
+.card-guest-name { font-size: 20px; font-weight: 600; }
 .table-number-row {
   display: flex;
   align-items: baseline;
@@ -443,32 +480,32 @@ body.mode-guest-facing .view-guest {
   margin: 4px 0;
 }
 .table-digit {
-  font-size: clamp(56px, 20vw, 88px);
+  font-size: clamp(52px, 18vw, 84px);
   font-weight: 900;
   line-height: 1;
 }
 .table-unit {
-  font-size: clamp(24px, 8vw, 36px);
+  font-size: clamp(22px, 7vw, 34px);
   font-weight: 700;
 }
 .card-location-hint {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   padding: 4px 14px;
   border-radius: 20px;
   background: rgba(0, 0, 0, 0.15);
 }
 .guest-welcome {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  margin: 6px 0;
+  margin: 4px 0;
 }
 
 /* 手動搜尋補登 */
 .manual-box {
   background: #1e293b;
   border-radius: 14px;
-  padding: 12px;
+  padding: 10px 12px;
 }
 .input-wrapper {
   position: relative;
@@ -477,13 +514,13 @@ body.mode-guest-facing .view-guest {
 }
 .manual-input {
   width: 100%;
-  height: 52px;
+  height: 48px;
   padding: 0 14px;
   border-radius: 10px;
   border: 1px solid #475569;
   background: #0f172a;
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   outline: none;
 }
 .manual-action-btn {
@@ -507,15 +544,15 @@ body.mode-guest-facing .view-guest {
 }
 .input-wrapper.has-val .clear-btn { display: block; }
 .search-results {
-  margin-top: 10px;
-  max-height: 160px;
+  margin-top: 8px;
+  max-height: 150px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 .search-item {
-  height: 52px;
+  height: 48px;
   padding: 0 14px;
   border-radius: 8px;
   background: #334155;
@@ -535,13 +572,13 @@ body.mode-guest-facing .view-guest {
   text-align: left;
 }
 .btn-manual-confirm {
-  height: 38px;
-  padding: 0 16px;
+  height: 36px;
+  padding: 0 14px;
   border-radius: 6px;
   border: none;
   background: #2563eb;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -555,11 +592,11 @@ body.mode-guest-facing .view-guest {
   margin-top: auto;
   display: flex;
   gap: 10px;
-  padding-top: 8px;
+  padding-top: 4px;
 }
 .btn-tool {
   flex: 1;
-  height: 48px;
+  height: 46px;
   border-radius: 10px;
   border: 1px solid #475569;
   background: #1e293b;
@@ -567,7 +604,7 @@ body.mode-guest-facing .view-guest {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .btn-tool:active { background: #334155; }
 .btn-tool.btn-confirming {
@@ -576,13 +613,14 @@ body.mode-guest-facing .view-guest {
   border-color: #ef4444 !important;
 }
 
-/* 防點擊劫持封鎖樣式 */
+/* 防點擊劫持封鎖樣式 (支援 100dvh 動態高度) */
 html.frame-blocked { height: 100%; background: #000; }
 .frame-blocked-modal {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
+  height: 100dvh;
   background: #000;
   color: #ef4444;
   font-size: 22px;
