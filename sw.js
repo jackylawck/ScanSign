@@ -1,11 +1,11 @@
 // sw.js
-// v202610030218-eaad664 與 {
+// v202610030245-ba4b2c5 與 {
   "./index.html": "sha256-Nkgu/hGB1RrKJgzus7JyLN2I4RRQu8LVG0IpM4az01o=",
   "./manifest.webmanifest": "sha256-l6KlKHODnUr2YzQdU64KunXMQMNdB5NW5BN1oI20ne4=",
   "./css/style.css": "sha256-ooSqdYAcVHSqSa9ngjwpz/ZDgTOfW8yakN8TAqerlJ8=",
   "./js/i18n.js": "sha256-iqAKipXYTXdFbehPYxPDjTGPc3e1GnAWwBjkM+ewxSI=",
   "./js/frame-guard.js": "sha256-VlZNfv+q6NXjaQbkrmhQGhLPt86QpC+54jcv4NOpUqk=",
-  "./js/crypto.js": "sha256-w6H+MPP4HZntbJS6y8DNEImtcZP57d1DaX4d6ECSMhQ=",
+  "./js/crypto.js": "sha256-KWU+PCe8oGJmOyOCj7kkbGwKjVoLRZiizJI+NdGh/4E=",
   "./js/storage.js": "sha256-dGRUhEeF6MnhnYSixWs8B4QnzUT5LyBYWi+4LKOJeik=",
   "./js/scanner.js": "sha256-ojBNjg9nRXrt3enFzRwM2xVV+Z3+8jOb2Wyac+5Ge9Y=",
   "./js/ui.js": "sha256-KedvQ7Py51x1iyhZWCn2wIiyaqd/mYVlXVjUYoKgGjs=",
@@ -14,7 +14,7 @@
   "./js/app.js": "sha256-RslXAf0MdgSY4yQJjjYrwSp/5BHm1lp85qrkZqAV/kY=",
   "./vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-v3-v202610030218-eaad664";
+const CACHE_NAME = "scansign-v3-v202610030245-ba4b2c5";
 
 // 離線必備核心資源清單
 const PRECACHE_ASSETS = [
