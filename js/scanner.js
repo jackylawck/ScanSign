@@ -11,7 +11,7 @@ const SCAN_COOLDOWN_MS = 2000;
 let visibilityBound = false;
 let currentOnScanSuccess = null;
 
-// 宣告共享的 Promise 實例，徹底消滅競態條件與並發衝突
+// 共享的 Promise 實例，確保啟動與停止串行化
 let stopPromise = null;
 let startPromise = null;
 
@@ -22,15 +22,25 @@ export async function enableScreenWakeLock() {
     activeWakeLock = await navigator.wakeLock.request('screen');
     activeWakeLock.addEventListener('release', () => { activeWakeLock = null; });
   } catch (err) {
-    console.warn("Wake Lock 申請受限:", err);
+    console.warn("[Scanner] Wake Lock 申請受限:", err);
   }
 }
 
-export function safeStartCamera(onScanSuccess) {
+/**
+ * 徹底終結競態：支援在 stopping 狀態下自動排隊等待，杜絕切換 App 造成的相機死鎖
+ */
+export async function safeStartCamera(onScanSuccess) {
+  // 1. 若正在啟動中，直接回傳正在進行的 Promise
   if (startPromise) return startPromise;
+
+  // 2. 若已經在運行，直接完成
   if (cameraState === 'running') return Promise.resolve();
-  if (cameraState === 'stopping') {
-    return Promise.resolve();
+
+  // 3. 關鍵修復：若正在停止中，等待停止徹底完成後再接續啟動
+  if (cameraState === 'stopping' && stopPromise) {
+    try {
+      await stopPromise;
+    } catch (_) {}
   }
 
   cameraState = 'starting';
@@ -63,6 +73,7 @@ export function safeStartCamera(onScanSuccess) {
         config,
         (decodedText) => {
           const now = Date.now();
+          // 同一張票券防抖冷卻，不同票券立即放行
           if (decodedText === lastScanText && (now - lastScanTime < SCAN_COOLDOWN_MS)) {
             return;
           }
@@ -74,22 +85,22 @@ export function safeStartCamera(onScanSuccess) {
             try {
               onScanSuccess(decodedText);
             } catch (e) {
-              console.error("onScanSuccess 回調執行異常:", e);
+              console.error("[Scanner] onScanSuccess 回調異常:", e);
             }
           }
         },
-        () => {}
+        () => {} // 忽略每幀未辨識到的無害空回調
       );
       cameraState = 'running';
     } catch (err) {
-      console.error("相機啟動異常:", err);
+      console.error("[Scanner] 相機啟動異常:", err);
       cameraState = 'error';
       lastScanText = "";
       lastScanTime = 0;
       if (html5QrCode) {
         try {
           await html5QrCode.clear().catch(() => {});
-        } catch (e) {}
+        } catch (_) {}
         html5QrCode = null;
       }
       if (errNotice) errNotice.classList.remove("hidden");
@@ -101,6 +112,9 @@ export function safeStartCamera(onScanSuccess) {
   return startPromise;
 }
 
+/**
+ * 安全釋放鏡頭與底層 MediaStream 軌道
+ */
 export function safeStopCamera() {
   if (stopPromise) return stopPromise;
 
@@ -112,16 +126,20 @@ export function safeStopCamera() {
 
   stopPromise = (async () => {
     try {
+      // 若有尚未完成的啟動作業，先等待其結算
       if (startPromise) {
         await startPromise.catch(() => {});
       }
 
       if (html5QrCode) {
-        await html5QrCode.stop().catch(() => {});
+        // 防禦性檢查：僅在執行中狀態才呼叫 stop，避免 library 拋出 NotRunning 異常
+        if (html5QrCode.isScanning) {
+          await html5QrCode.stop().catch(() => {});
+        }
         await html5QrCode.clear().catch(() => {});
       }
     } catch (e) {
-      console.warn("相機停止過程非致命例外:", e);
+      console.warn("[Scanner] 相機釋放過程非致命例外:", e);
     } finally {
       html5QrCode = null;
       cameraState = 'idle';
@@ -132,7 +150,9 @@ export function safeStopCamera() {
   return stopPromise;
 }
 
-// 完美防禦級別的序列化生命週期管理 (加入 visibilityState 雙重校驗)
+/**
+ * 跨平台生命週期：切換應用或螢幕休眠時自動安全釋放，恢復時平滑重啟
+ */
 export function bindVisibilityAutoRecover(onScanSuccess) {
   currentOnScanSuccess = onScanSuccess;
 
@@ -143,15 +163,15 @@ export function bindVisibilityAutoRecover(onScanSuccess) {
     clearTimeout(resumeDebounceTimer);
 
     if (document.visibilityState === 'hidden') {
-      safeStopCamera().catch(err => console.warn("背景停止相機異常:", err));
+      safeStopCamera().catch(err => console.warn("[Scanner] 背景關閉相機警告:", err));
     } else if (document.visibilityState === 'visible') {
       resumeDebounceTimer = setTimeout(async () => {
-        // 第一重防線：進入非同步回調時檢查
+        // 第一重校驗：防快速切換
         if (document.visibilityState !== 'visible') return;
         
         await safeStopCamera();
         
-        // 第二重防線：在耗時的 await 結束後再次檢查
+        // 第二重校驗：防非同步耗時期間使用者再次切出
         if (document.visibilityState !== 'visible') return;
         
         await safeStartCamera(currentOnScanSuccess);
