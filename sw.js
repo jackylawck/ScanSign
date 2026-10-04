@@ -1,5 +1,5 @@
 // sw.js
-// 注意：v202610040011-3aee120 與 {
+// 注意：v202610040013-45462a0 與 {
   "index.html": "sha256-Nkgu/hGB1RrKJgzus7JyLN2I4RRQu8LVG0IpM4az01o=",
   "manifest.webmanifest": "sha256-l6KlKHODnUr2YzQdU64KunXMQMNdB5NW5BN1oI20ne4=",
   "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
@@ -7,7 +7,7 @@
   "js/crypto.js": "sha256-KWU+PCe8oGJmOyOCj7kkbGwKjVoLRZiizJI+NdGh/4E=",
   "js/scanner.js": "sha256-ojBNjg9nRXrt3enFzRwM2xVV+Z3+8jOb2Wyac+5Ge9Y=",
   "js/ui.js": "sha256-7uJbo87PJ32T99T70l+wOXCqUswvYNw2Fi5aa/lsfK0=",
-  "js/i18n.js": "sha256-LlliqTG3R62FMkz84TRNI5vBf2jUqLK0ANlubjdlGKE=",
+  "js/i18n.js": "sha256-ChNRzOHLfvNv5FBcfug90cGlvJlxC24PQ2beunRHDe8=",
   "js/admin.js": "sha256-OoiLXpPdvNG3bbXD5HZIj4zT4WqpV4MUXA01MMYwtSQ=",
   "js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
   "js/frame-guard.js": "sha256-/oszFOuTSHyV4fuBPfpeaLkAi65hrKWCGJLYVxi9Tyk=",
@@ -15,7 +15,7 @@
   "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
   "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-v3-v202610040011-3aee120";
+const CACHE_NAME = "scansign-v3-v202610040013-45462a0";
 
 // 由 inject_sw_integrity.py 自動注入之 W3C SRI 完整性雜湊表
 const RESOURCE_INTEGRITY = {
@@ -26,7 +26,7 @@ const RESOURCE_INTEGRITY = {
   "js/crypto.js": "sha256-KWU+PCe8oGJmOyOCj7kkbGwKjVoLRZiizJI+NdGh/4E=",
   "js/scanner.js": "sha256-ojBNjg9nRXrt3enFzRwM2xVV+Z3+8jOb2Wyac+5Ge9Y=",
   "js/ui.js": "sha256-7uJbo87PJ32T99T70l+wOXCqUswvYNw2Fi5aa/lsfK0=",
-  "js/i18n.js": "sha256-LlliqTG3R62FMkz84TRNI5vBf2jUqLK0ANlubjdlGKE=",
+  "js/i18n.js": "sha256-ChNRzOHLfvNv5FBcfug90cGlvJlxC24PQ2beunRHDe8=",
   "js/admin.js": "sha256-OoiLXpPdvNG3bbXD5HZIj4zT4WqpV4MUXA01MMYwtSQ=",
   "js/search.js": "sha256-h5WXPaQ1MtE18D3vxaZJmEwQeWIjn8FmJu+vHJK4QvU=",
   "js/frame-guard.js": "sha256-/oszFOuTSHyV4fuBPfpeaLkAi65hrKWCGJLYVxi9Tyk=",
