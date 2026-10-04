@@ -55,7 +55,7 @@ export const DICTIONARY = {
     btnDownloadTemplate: "📥 下載範本",
     btnImportFile: "📂 匯入檔案",
     adminTitle: "🛠️ 主辦方離線產票與自訂 PIN 系統",
-    adminSetPinLabel: "1. 設定當日工作 PIN 碼 (4-8位數字)：",
+    adminSetPinLabel: "1. 設定當日工作 PIN 碼 (純數字需8位，或6位以上英數組合)：",
     adminGuestListLabel: "2. 貼上名冊 (每行：姓名, 桌號, 電話後4碼)：",
     adminBtnGenerate: "🚀 密碼學加密並產生檔案",
     adminSuccessTip: "🎉 加密完成！名冊與票券已在本地生成，零上傳安全無虞。",
@@ -133,7 +133,7 @@ export const DICTIONARY = {
     btnDownloadTemplate: "📥 Template",
     btnImportFile: "📂 Import File",
     adminTitle: "🛠️ Offline Ticket Generator & Custom PIN",
-    adminSetPinLabel: "1. Set Station PIN (4-8 digits):",
+    adminSetPinLabel: "1. Set Station PIN (min 8 digits, or 6+ alphanumeric):",
     adminGuestListLabel: "2. Paste Roster (Name, Table, Last4Phone):",
     adminBtnGenerate: "🚀 Cryptographically Sign & Encrypt",
     adminSuccessTip: "🎉 Success! Roster and tickets created locally with Zero Data Leakage.",
@@ -204,17 +204,27 @@ export function toggleLang() {
  * 安全 DOM 渲染 (更新文字節點保護圖示子元素，支援 placeholder、aria-label 及 title)
  */
 export function applyTranslations() {
-  // 1. 純文字更新 (尋找第一個 TextNode 替換，不破壞 <span> 或 <svg>)
+  // 1. 純文字更新
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const k = el.getAttribute("data-i18n");
     const val = t(k);
     if (!val) return;
 
-    const textNode = Array.from(el.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
-    if (textNode) {
-      textNode.textContent = val;
-    } else {
+    // 若無子元素，直接覆蓋
+    if (el.children.length === 0) {
       el.textContent = val;
+    } else {
+      // 若有子元素（例如包含圖示 span），僅替換文字節點
+      const textNodes = Array.from(el.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
+      if (textNodes.length > 0) {
+        textNodes[0].textContent = val;
+        // 清理多餘的文字碎片
+        for (let i = 1; i < textNodes.length; i++) {
+          textNodes[i].remove();
+        }
+      } else {
+        el.appendChild(document.createTextNode(val));
+      }
     }
   });
 
