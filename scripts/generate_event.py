@@ -6,6 +6,7 @@ ScanSign 企業級離線產票與 Manifest 加密引擎 (100分終極完工版)
 - 零靜默災難：私鑰損壞直接中斷，杜絕自動覆寫造成歷史票券全廢
 - 資安守門員：內建 .gitignore 規格檢測，防止機密金鑰推上公開 Repo
 - 表頭精準防誤殺：兩欄名冊嚴格全匹配，杜絕一般嘉賓被吃單
+- 雙向對齊：同步輸出 ciphertext 與 data，並自動產生可列印之 tickets.html
 """
 
 import os
@@ -39,6 +40,7 @@ QRCODES_DIR = BASE_DIR / "qrcodes"
 PRIVATE_KEY_PATH = DATA_DIR / "event_private_key.pem"
 PIN_PATH = DATA_DIR / "event_pin.txt"
 MANIFEST_PATH = DATA_DIR / "manifest.enc.json"
+TICKETS_HTML_PATH = DATA_DIR / "tickets.html"
 CSV_PATH = DATA_DIR / "guests.csv"
 
 
@@ -88,7 +90,6 @@ def is_header_row(row: list) -> bool:
         if any(kw in c for kw in header_keywords)
     )
 
-    # 關鍵防禦：若名冊只有兩欄，必須全數命中關鍵字才視為表頭
     if len(lower_cells) <= 2:
         return matches == len(lower_cells)
     return matches >= max(2, len(lower_cells) / 2)
@@ -122,7 +123,7 @@ def check_gitignore_security():
     content = gitignore_path.read_text(encoding="utf-8")
     missing = [rule for rule in required if rule not in content]
     if missing:
-        print(f"⚠️️ 【安全警告】.gitignore 缺少機密排除規則：{missing}")
+        print(f"⚠️ 【安全警告】.gitignore 缺少機密排除規則：{missing}")
 
 
 def load_or_create_private_key():
@@ -153,7 +154,6 @@ def load_or_create_private_key():
 
 def load_or_create_pin() -> str:
     """PIN 碼載入機制：優先延用既有 PIN（補簽模式），杜絕覆寫發出給前線的密碼。"""
-    # 1. 優先使用現存的 PIN 檔案 (確保補簽時不會讓工作人員手上的 PIN 失效)
     if PIN_PATH.exists():
         try:
             existing = PIN_PATH.read_text(encoding="utf-8").strip()
@@ -163,7 +163,6 @@ def load_or_create_pin() -> str:
         except OSError:
             pass
 
-    # 2. 其次讀取環境變數
     env_pin = os.environ.get("SCANSIGN_EVENT_PIN", "").strip()
     if env_pin:
         if is_valid_pin(env_pin):
@@ -177,7 +176,6 @@ def load_or_create_pin() -> str:
         else:
             print(f"⚠️ 環境變數 SCANSIGN_EVENT_PIN ({env_pin}) 強度不符規範，將自動生成安全 PIN。")
 
-    # 3. 隨機生成 8 位純數字高強度 PIN
     new_pin = "".join(secrets.choice("0123456789") for _ in range(8))
     try:
         PIN_PATH.write_text(new_pin, encoding="utf-8")
@@ -222,7 +220,6 @@ def load_or_create_roster_csv(csv_path: Path) -> list:
             table_raw = row[1].strip() if len(row) > 1 else "1"
             phone_raw = row[2].strip() if len(row) > 2 else ""
 
-            # 嚴格只提取數字末 4 碼，若完全無數字則統一為 "0000"
             phone_digits = re.sub(r'\D', '', phone_raw)
             if len(phone_digits) >= 4:
                 phone_suffix = phone_digits[-4:]
@@ -239,6 +236,63 @@ def load_or_create_roster_csv(csv_path: Path) -> list:
             })
 
     return guests
+
+
+def generate_printable_html(guests: list, qr_data_urls: dict) -> str:
+    """生成全場離線可列印 tickets.html，便於線下大量印刷或發送。"""
+    cards = []
+    for g in guests:
+        tid = g["tid"]
+        name = g["name"]
+        table = g["table"]
+        phone = g["phone_suffix"]
+        data_url = qr_data_urls[tid]
+        cards.append(f"""
+        <div class="ticket-card" id="card-{tid}">
+          <h2>{name}</h2>
+          <div class="table-info">第 {table} 圍 / 桌</div>
+          <div class="qr-box">
+            <img src="{data_url}" alt="QR Code">
+          </div>
+          <div class="tid-tag">{tid} | 末4碼: {phone}</div>
+        </div>
+        """)
+
+    return f"""<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
+  <title>ScanSign 現場入場憑證發送平台</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 24px; background: #f8fafc; color: #0f172a; }}
+    .header-bar {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: #fff; padding: 16px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+    .ticket-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }}
+    .ticket-card {{ border: 2px dashed #94a3b8; border-radius: 12px; padding: 16px; text-align: center; background: #fff; page-break-inside: avoid; display: flex; flex-direction: column; align-items: center; }}
+    h2 {{ margin: 0 0 6px 0; font-size: 20px; }}
+    .table-info {{ font-size: 16px; font-weight: bold; color: #2563eb; margin-bottom: 10px; }}
+    .qr-box img {{ width: 220px; height: 220px; display: block; margin: 0 auto; image-rendering: pixelated; }}
+    .tid-tag {{ font-size: 12px; color: #64748b; margin-top: 8px; }}
+    @media print {{
+      .header-bar {{ display: none !important; }}
+      body {{ background: #fff; padding: 0; }}
+      .ticket-card {{ border: 1px solid #000; box-shadow: none; margin-bottom: 10px; }}
+    }}
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div>
+      <h1 style="margin: 0; font-size: 20px;">🎟️️ ScanSign 賓客電子入場券清單</h1>
+      <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">共 {len(guests)} 位賓客。支援無網離線列印與快速分發。</p>
+    </div>
+    <button onclick="window.print()" style="padding: 10px 20px; font-size: 15px; font-weight: 700; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer;">🖨️ 列印全場紙本</button>
+  </div>
+  <div class="ticket-grid">
+    {''.join(cards)}
+  </div>
+</body>
+</html>"""
 
 
 def main():
@@ -268,6 +322,7 @@ def main():
     # 4. 逐筆簽名並產生高容錯 QR Code (Error Correction H)
     QRCODES_DIR.mkdir(parents=True, exist_ok=True)
     manifest = {}
+    qr_data_urls = {}
 
     for g in guests:
         tid = g["tid"]
@@ -277,7 +332,6 @@ def main():
         raw_p1363 = der_to_p1363_raw(der_signature)
         sig_b64url = to_base64url(raw_p1363)
 
-        # 標準傳輸 Payload：v1.<tid>.<Base64URL_Sig>
         payload = f"v1.{tid}.{sig_b64url}"
 
         manifest[tid] = {
@@ -305,6 +359,13 @@ def main():
             print(f"❌ 無法寫入 QR Code 檔案 ({img_path})：{e}")
             sys.exit(1)
 
+        # 轉為 Data URL 供 HTML 列印使用
+        import io
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64_img = base64.b64encode(buf.getvalue()).decode('ascii')
+        qr_data_urls[tid] = f"data:image/png;base64,{b64_img}"
+
     print(f"✅ 成功產出 {len(guests)} 張高容錯票券至：{QRCODES_DIR.name}/")
 
     # 5. 注入活動公鑰進 Manifest
@@ -326,6 +387,7 @@ def main():
     manifest_bytes = json.dumps(manifest, ensure_ascii=False).encode('utf-8')
     ciphertext = aesgcm.encrypt(iv, manifest_bytes, None)
 
+    cipher_hex = ciphertext.hex()
     encrypted_payload = {
         "version": "1.0",
         "kdf": "PBKDF2",
@@ -333,7 +395,8 @@ def main():
         "cipher": "AES-256-GCM",
         "salt": salt.hex(),
         "iv": iv.hex(),
-        "ciphertext": ciphertext.hex()
+        "ciphertext": cipher_hex,  # 標準密文字段
+        "data": cipher_hex        # 雙向相容字段
     }
 
     try:
@@ -342,6 +405,15 @@ def main():
     except OSError as e:
         print(f"❌ 無法寫入加密名冊檔案：{e}")
         sys.exit(1)
+
+    # 7. 自動產出全場離線列印 HTML
+    html_content = generate_printable_html(guests, qr_data_urls)
+    try:
+        with open(TICKETS_HTML_PATH, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print(f"🖨️ 成功產出離線列印總表至：{TICKETS_HTML_PATH.relative_to(BASE_DIR)}")
+    except OSError as e:
+        print(f"⚠️ 無法寫入 tickets.html：{e}")
 
     print("=" * 70)
     print("🎉 【ScanSign 活動名冊與密鑰已就緒】")
