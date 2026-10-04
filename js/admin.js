@@ -91,6 +91,7 @@ export async function exportPublicKeyRawHex(publicKey) {
 
 /**
  * 6. 使用自訂 PIN 碼執行 PBKDF2 + AES-256-GCM 加密名冊 (自動封裝公鑰)
+ * 關鍵修復：產出 ciphertext 欄位，徹底對齊 Python generate_event.py 與 crypto.js 解密器
  */
 export async function encryptManifestWithCustomPin(manifestObj, pin, publicKey = null) {
   ensureCryptoEnvironment();
@@ -137,14 +138,19 @@ export async function encryptManifestWithCustomPin(manifestObj, pin, publicKey =
     plaintext
   );
 
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+  const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+  const cipherHex = Array.from(new Uint8Array(ciphertext)).map(b => b.toString(16).padStart(2, '0')).join('');
+
   return {
     version: "1.0",
     kdf: "PBKDF2",
     iterations: 100000,
     cipher: "AES-256-GCM",
-    salt: Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join(''),
-    iv: Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join(''),
-    data: Array.from(new Uint8Array(ciphertext)).map(b => b.toString(16).padStart(2, '0')).join('')
+    salt: saltHex,
+    iv: ivHex,
+    ciphertext: cipherHex, // 核心修復：標準密文屬性名
+    data: cipherHex       // 防禦性回退相容
   };
 }
 
@@ -216,7 +222,6 @@ function isHeaderRow(parts) {
  */
 function normalizeTable(raw) {
   const s = String(raw || '').trim();
-  // 匹配：可選文字/英文前綴 + 連接號 + 數字 + 可選字母後綴
   const match = s.match(/^([A-Za-z\u4e00-\u9fff]*)[\s\-]*(\d+)([A-Za-z]?)/);
   if (match) {
     let prefix = match[1] ? match[1].replace(/^(table|桌|圍|第)/i, '').trim().toUpperCase() : '';
@@ -230,7 +235,7 @@ function normalizeTable(raw) {
 }
 
 /**
- * 10. 解析名冊輸入 (相容 Excel Tab 貼上與標準 CSV)
+ * 10. 解析名冊輸入 (相容 Excel Tab 貼上與標準 CSV，並正規化提取手機末 4 碼)
  */
 export function parseGuestListInput(rawText) {
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -251,7 +256,15 @@ export function parseGuestListInput(rawText) {
 
       const name = rawName || "貴賓";
       const table = normalizeTable(rawTable);
-      const phone = rawPhone || "0000";
+
+      // 核心修復：正規化提取純數字末 4 碼，與後端 Python 邏輯精準對齊
+      const phoneDigits = rawPhone.replace(/\D/g, '');
+      let phone = "0000";
+      if (phoneDigits.length >= 4) {
+        phone = phoneDigits.slice(-4);
+      } else if (phoneDigits.length > 0) {
+        phone = phoneDigits.padStart(4, '0');
+      }
 
       guests.push({ name, table, phone });
     }
