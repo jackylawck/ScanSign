@@ -41,12 +41,13 @@
   <link rel="apple-touch-icon" sizes="512x512" href="icons/ScanSign512icon.png">
   <link rel="manifest" href="manifest.webmanifest">
 
+  <!-- 關鍵資安強化：徹底移除外部 api.qrserver.com，收緊為純本地與 Data URI -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'none';
     script-src 'self' 'unsafe-inline';
     worker-src 'self';
     style-src 'self' 'unsafe-inline';
-    img-src 'self' data: blob: https://jackylawck.github.io https://api.qrserver.com;
+    img-src 'self' data: blob:;
     connect-src 'self';
     manifest-src 'self';
     base-uri 'none';
@@ -57,7 +58,9 @@
 
   <link rel="stylesheet" href="css/style.css">
   <script src="js/frame-guard.js"></script>
-  <script src="vendor/html5-qrcode.min.js" integrity="__VENDOR_SRI_HASH__" crossorigin="anonymous"></script>
+  <!-- 核心修復：載入端側離線 QR Code 標準生成庫 -->
+  <script src="vendor/qrcode.min.js"></script>
+  <script src="vendor/html5-qrcode.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -66,7 +69,7 @@
     <div class="nav-left-tools">
       <button id="openAdminBtn" class="nav-badge-btn nav-admin-btn" type="button" data-i18n="btnAdmin">🛠️ 產票與自訂PIN</button>
       <button id="openGuideBtn" class="nav-badge-btn" type="button" data-i18n="btnGuide">📖 操作指南</button>
-      <button id="openComplianceBtn" class="nav-badge-btn" type="button" data-i18n="btnCompliance">🛡️️ 合規與架構</button>
+      <button id="openComplianceBtn" class="nav-badge-btn" type="button" data-i18n="btnCompliance">🛡 合規與架構</button>
     </div>
     <button id="langToggleBtn" class="lang-toggle-btn" type="button">English</button>
   </header>
@@ -107,7 +110,7 @@
         </select>
       </div>
 
-      <input type="password" id="pinInput" maxlength="8" placeholder="PIN" autocomplete="off" inputmode="numeric">
+      <input type="password" id="pinInput" maxlength="16" placeholder="PIN" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
       <button id="unlockBtn" class="btn-primary" data-i18n="unlockBtn">解鎖系統</button>
       <div id="pinError" class="error-msg"></div>
 
@@ -126,8 +129,8 @@
       <h3 data-i18n="adminTitle">🛠️ 主辦方離線產票與自訂 PIN 系統</h3>
       <div class="modal-content">
         <div class="form-group">
-          <label for="adminPinInput" data-i18n="adminSetPinLabel">1. 設定當日工作 PIN 碼 (4-8位數字)：</label>
-          <input type="text" id="adminPinInput" class="admin-input-text" placeholder="例如：202688" maxlength="8" value="202688">
+          <label for="adminPinInput" data-i18n="adminSetPinLabel">1. 設定當日工作 PIN 碼 (純數字需8位，或6位以上英數組合)：</label>
+          <input type="text" id="adminPinInput" class="admin-input-text" placeholder="例如：20268888" maxlength="16" value="20268888">
         </div>
 
         <div class="form-group">
@@ -177,7 +180,7 @@
         </div>
         <div class="guide-item">
           <strong data-i18n="guideStep2Title">2. 正式活動 (主辦方)</strong>
-          <p data-i18n="guideStep2Desc">點擊頂部「🛠️ 產票與自訂PIN」，貼上名單並輸入你想要的 PIN 碼，即可直接在瀏覽器生成專屬 manifest.enc.json。</p>
+          <p data-i18n="guideStep2Desc">點擊頂部「🛠️ 產票與自訂PIN」，貼上名單並輸入你想要的 PIN 碼，即可直接在瀏覽器生成專屬 manifest.enc.json 與 tickets.html。</p>
         </div>
         <div class="guide-item">
           <strong data-i18n="guideStep3Title">3. 現場離線驗票</strong>
