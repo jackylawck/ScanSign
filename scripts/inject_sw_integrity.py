@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # scripts/inject_sw_integrity.py
 """
-ScanSign Service Worker SRI 完整性雜湊注入守門員 (100分生產級)
+ScanSign Service Worker SRI 完整性雜湊注入守門員 (100分生產級終極版)
 - 嚴格守門：缺少佔位符或核心檔案缺失時一律中斷 (sys.exit(1))
 - 支援 --check 模式：供 CI 唯讀驗證 Hash 是否一致而不修改檔案
-- 路徑正規化：去除 ./ 前綴，與 sw.js 內部 caches.match 行為精準對齊
+- 路徑正規化：去除 ./ 前綴，納入 vendor/qrcode.min.js 確保 100% 離線可用
 """
 
 import os
@@ -32,7 +32,9 @@ FILES_TO_HASH = [
     "js/i18n.js",
     "js/admin.js",
     "js/search.js",
+    "js/storage.js",
     "js/frame-guard.js",
+    "vendor/qrcode.min.js",        # 核心修復：納入離線 QR 生成引擎
     "vendor/html5-qrcode.min.js",
     "icons/ScanSign192icon.png",
     "icons/ScanSign512icon.png"
@@ -93,7 +95,6 @@ def main():
     # 3. 處理 --check 模式 (供 CI 檢驗 PR 是否同步更新了 sw.js)
     if args.check:
         print("🔍 執行 --check 模式：比對現有 sw.js 完整性雜湊...")
-        map_json_str = json.dumps(integrity_map, indent=2)
         if PLACEHOLDER in sw_code:
             print("❌ 【校驗失敗】sw.js 仍保留佔位符，尚未注入最新雜湊！")
             sys.exit(1)
@@ -134,7 +135,7 @@ def main():
 
     print("=" * 70)
     print(f"✅ {SW_PATH.name} 資源完整性雜湊 (SRI) 注入完成！")
-    print(f"📦 已受保護資源總數：{len(integrity_map)} 項")
+    print(f"📦 已受保護資源總數：{len(integrity_map)} 項 (含 vendor/qrcode.min.js)")
     print("💡 備註：此處 Service Worker 採用 SHA-256 進行本機認證快取校驗。")
     print("=" * 70)
 
