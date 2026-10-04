@@ -30,7 +30,7 @@ export function getSecurityLogs() {
 }
 
 /**
- * 清理當前 Session 記憶體暫存 (換名冊或重新鎖定時調用，防止跨活動資料污染)
+ * 清理當前 Session 記憶體暫存 (防止跨名冊資料污染)
  */
 export function clearCurrentSessionMemory() {
   inMemoryScannedSet.clear();
@@ -38,6 +38,26 @@ export function clearCurrentSessionMemory() {
   inMemorySecurityLogs.length = 0;
   monotonicSeq = 0;
   securitySeq = 0;
+}
+
+/**
+ * 徹底清空 IndexedDB 資料庫記錄 (換名冊或新活動強制重置時使用)
+ */
+export async function clearEntireDatabase() {
+  clearCurrentSessionMemory();
+  if (!isIndexedDBAvailable || !db) return;
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(["logs", "security_logs"], "readwrite");
+      tx.objectStore("logs").clear();
+      tx.objectStore("security_logs").clear();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    } catch (_) {
+      resolve(false);
+    }
+  });
 }
 
 // 單例 Promise 快取，徹底解決並發連點時的時序穿透
@@ -128,32 +148,14 @@ export function recordCheckIn(logEntry) {
       
       req.onsuccess = (e) => {
         logEntry.__dbId = e.target.result;
+        // 核心修復：如果非同步驗簽已在落盤前結算完成，立即回寫最新狀態
+        if (logEntry.verified !== "pending") {
+          updateLogVerifiedStatus(logEntry, logEntry.verified);
+        }
       };
 
       tx.oncomplete = () => {
         pendingDBWrites--;
-
-        // 若驗簽在 add 提交前完成，發起二次更新
-        if (logEntry.verified !== "pending" && logEntry.__dbId) {
-          try {
-            const txSync = db.transaction("logs", "readwrite");
-            const storeSync = txSync.objectStore("logs");
-            const getReq = storeSync.get(logEntry.__dbId);
-            getReq.onsuccess = (ev) => {
-              const record = ev.target.result;
-              if (record) {
-                record.verified = logEntry.verified;
-                storeSync.put(record);
-              }
-            };
-            txSync.oncomplete = () => {};
-            txSync.onerror = (e) => {
-              console.warn("二次同步事務失敗:", e.target.error);
-            };
-          } catch (syncErr) {
-            console.warn("落盤後追溯同步驗證狀態失敗:", syncErr);
-          }
-        }
       };
 
       tx.onerror = () => {
@@ -172,7 +174,12 @@ export function updateLogVerifiedStatus(entryRef, status) {
   if (!entryRef) return;
   entryRef.verified = status;
 
-  if (isIndexedDBAvailable && db && entryRef.__dbId) {
+  if (isIndexedDBAvailable && db) {
+    if (!entryRef.__dbId) {
+      // 若 DB ID 尚未生成，狀態已在 entryRef 上更新，待 recordCheckIn 的 req.onsuccess 自動處理
+      return;
+    }
+
     try {
       const tx = db.transaction("logs", "readwrite");
       const store = tx.objectStore("logs");
@@ -186,10 +193,10 @@ export function updateLogVerifiedStatus(entryRef, status) {
       };
       tx.oncomplete = () => {};
       tx.onerror = (e) => {
-        console.warn("直接更新驗證狀態事務失敗:", e.target.error);
+        console.warn("更新驗證狀態失敗:", e.target.error);
       };
     } catch (err) {
-      console.warn("精準更新驗證狀態失敗:", err);
+      console.warn("精準更新驗證狀態事務異常:", err);
     }
   }
 }
