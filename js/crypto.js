@@ -1,9 +1,11 @@
 // js/crypto.js
 
-// 內建預設 Demo 名冊之備用公鑰 (未壓縮 65-byte Hex，04 + 128 個 0 作為佔位符)
-export const DEFAULT_ECDSA_PUBKEY_HEX = "0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+// 內建預設 Demo 名冊之備用公鑰 (未壓縮 65-byte Hex，04 + 128 個 0，長度固定 130 碼)
+export const DEFAULT_ECDSA_PUBKEY_HEX = "04" + "0".repeat(128);
 
 let cachedVerifyKey = null;
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 
 /**
  * 重置快取的驗簽公鑰 (換名冊或重新鎖定時調用)
@@ -72,7 +74,54 @@ export async function getVerifyKey() {
 }
 
 /**
- * ECDSA P-256 數位簽章驗證 (P0 防禦：無有效公鑰絕對拒絕驗證)
+ * 核心格式相容轉換：將可能由 Python / OpenSSL 產出的 DER/ASN.1 格式簽名轉為 Web Crypto 要求的 IEEE P1363 (64 bytes)
+ */
+function normalizeSignatureToP1363(sigBuffer) {
+  const bytes = new Uint8Array(sigBuffer);
+  // 若長度正好為 64 字節且不是以 0x30 (SEQUENCE) 開頭，代表已是原生 IEEE P1363
+  if (bytes.length === 64 && bytes[0] !== 0x30) {
+    return sigBuffer;
+  }
+
+  // 判定是否為 DER 格式 (0x30 [len] 0x02 [rLen] [r] 0x02 [sLen] [s])
+  if (bytes[0] === 0x30) {
+    try {
+      let offset = 2; // 跳過 0x30 與長度字節
+      if (bytes[1] & 0x80) {
+        offset += (bytes[1] & 0x7f);
+      }
+
+      // 讀取 r
+      if (bytes[offset++] !== 0x02) throw new Error("無效的 DER r 標記");
+      let rLen = bytes[offset++];
+      let rBytes = bytes.slice(offset, offset + rLen);
+      offset += rLen;
+
+      // 讀取 s
+      if (bytes[offset++] !== 0x02) throw new Error("無效的 DER s 標記");
+      let sLen = bytes[offset++];
+      let sBytes = bytes.slice(offset, offset + sLen);
+
+      // 去除因最高位正負號引入的前導 0x00，並左補齊至固定 32 字節
+      const p1363 = new Uint8Array(64);
+
+      if (rBytes.length > 32) rBytes = rBytes.slice(rBytes.length - 32);
+      p1363.set(rBytes, 32 - rBytes.length);
+
+      if (sBytes.length > 32) sBytes = sBytes.slice(sBytes.length - 32);
+      p1363.set(sBytes, 64 - sBytes.length);
+
+      return p1363.buffer;
+    } catch (derErr) {
+      console.warn("[Crypto] DER 簽名解析回退:", derErr);
+    }
+  }
+
+  return sigBuffer;
+}
+
+/**
+ * ECDSA P-256 數位簽章驗證 (雙向相容 Web Crypto P1363 與 Python DER 簽名)
  */
 export async function verifySignature(tid, sigStr) {
   try {
@@ -81,17 +130,18 @@ export async function verifySignature(tid, sigStr) {
     const key = await getVerifyKey();
     if (!key) {
       console.error("[Crypto Security Alert] 當前環境缺少有效公鑰，一律阻斷驗簽請求！");
-      return false; // 嚴格拒絕偽造與未授權通行
+      return false;
     }
 
-    const data = new TextEncoder().encode(tid);
-    // 明確指定 Base64 格式解析簽章
-    const signature = parseBinaryToBuffer(sigStr, 'base64');
+    const data = textEncoder.encode(tid);
+    const rawSigBuf = parseBinaryToBuffer(sigStr, 'base64');
+    // 自動相容規範轉換，杜絕跨平台驗簽死鎖
+    const p1363SigBuf = normalizeSignatureToP1363(rawSigBuf);
 
     return await crypto.subtle.verify(
       { name: "ECDSA", hash: { name: "SHA-256" } },
       key,
-      signature,
+      p1363SigBuf,
       data
     );
   } catch (err) {
@@ -107,8 +157,6 @@ export async function decryptManifestWithPin(encData, pin) {
   if (!encData || typeof encData !== "object") {
     throw new Error("名冊資料無效：傳入的資料並非有效的 JSON 物件");
   }
-
-  const enc = new TextEncoder();
 
   // 1. 嚴格規格與演算法相容性檢查
   if (encData.version && encData.version !== "1.0") {
@@ -126,9 +174,9 @@ export async function decryptManifestWithPin(encData, pin) {
     throw new Error("名冊資料損毀：缺少加密必要的 salt 或 iv 參數");
   }
 
-  const cipherPayload = encData.data || encData.ciphertext;
+  const cipherPayload = encData.ciphertext || encData.data;
   if (!cipherPayload) {
-    throw new Error("名冊資料損毀：缺少密文欄位 (data / ciphertext)");
+    throw new Error("名冊資料損毀：缺少密文欄位 (ciphertext / data)");
   }
 
   // 顯式指定 Hex 格式解析，杜絕字元編碼歧義
@@ -140,7 +188,7 @@ export async function decryptManifestWithPin(encData, pin) {
   // 3. 密鑰衍生 (PBKDF2 100,000 次 SHA-256)
   const pinKey = await crypto.subtle.importKey(
     "raw",
-    enc.encode(pin),
+    textEncoder.encode(pin),
     { name: "PBKDF2" },
     false,
     ["deriveKey"]
@@ -166,7 +214,7 @@ export async function decryptManifestWithPin(encData, pin) {
     cipherBytes
   );
 
-  const parsedManifest = JSON.parse(new TextDecoder().decode(decryptedBuf));
+  const parsedManifest = JSON.parse(textDecoder.decode(decryptedBuf));
 
   // 5. 強制綁定名冊專屬公鑰（無公鑰時立即阻斷）
   if (parsedManifest.__event_pubkey_hex) {
