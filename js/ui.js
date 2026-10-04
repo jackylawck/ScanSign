@@ -2,8 +2,18 @@
 import { t } from './i18n.js';
 
 let audioCtx = null;
-let currentCardState = null; // 快取卡片狀態 (儲存 i18n Key，支援語系動態熱重繪)
+let currentCardState = null; // 快取卡片狀態 (支援語系動態熱重繪)
 let flashTimer = null;
+
+/**
+ * 輔助防禦：智能解析 i18n Key 或保留已翻譯字串
+ */
+function resolveI18n(keyOrText) {
+  if (!keyOrText) return "";
+  const translated = t(keyOrText);
+  // 若字典有對應翻譯則返回，否則返回原字串
+  return translated !== keyOrText ? translated : keyOrText;
+}
 
 /**
  * 1. 顯式初始化 Web Audio Context (具備例外捕獲與狀態喚醒)
@@ -75,7 +85,7 @@ export function playFeedbackSound(type = 'success') {
 }
 
 /**
- * 3. 鏡頭外框 CSS 動畫閃爍 (優先鎖定 reader-container 外層，防止裁切)
+ * 3. 鏡頭外框 CSS 動畫閃爍 (重置強制 Reflow，保證連續掃描次次觸發)
  */
 function flashCameraBorder(type = 'success') {
   const container = document.getElementById("reader-container") || document.getElementById("reader");
@@ -86,7 +96,7 @@ function flashCameraBorder(type = 'success') {
   }
 
   container.classList.remove("flash-border-success", "flash-border-duplicate", "flash-border-error");
-  void container.offsetWidth; // 強制 Reflow
+  void container.offsetWidth; // 強制 Reflow 重啟 CSS 動畫
 
   const cls = type === 'duplicate' ? 'flash-border-duplicate' : 
               type === 'error' ? 'flash-border-error' : 'flash-border-success';
@@ -104,7 +114,7 @@ function flashCameraBorder(type = 'success') {
 function updateCardTextOnly(guest, isDuplicate) {
   const tableNo = String(guest.table || guest.tableNo || "--").trim();
   
-  // 隱私合規與多語系：動態調用 t("phoneSuffix")
+  // 隱私最小化與多語系：末 4 碼呈現
   const rawPhone = String(guest.phone_suffix || guest.phone || "").trim();
   const phoneSuffix = rawPhone.length > 4 ? rawPhone.slice(-4) : rawPhone;
   const locationText = phoneSuffix ? `${t("phoneSuffix")}: ${phoneSuffix}` : "";
@@ -123,7 +133,7 @@ function updateCardTextOnly(guest, isDuplicate) {
   const staffHintEl = document.getElementById("staffLocationHint");
   if (staffHintEl) staffHintEl.textContent = locationText;
 
-  // 2. 賓客視角 (180度翻轉)
+  // 2. 賓客視角 (180度翻轉面板)
   const guestTableDigitEl = document.getElementById("guestTableDigit");
   if (guestTableDigitEl) guestTableDigitEl.textContent = tableNo;
 
@@ -151,7 +161,9 @@ export function renderCardSuccess(guest, isDuplicate = false) {
   flashCameraBorder(isDuplicate ? 'duplicate' : 'success');
 
   if (navigator.vibrate) {
-    navigator.vibrate(isDuplicate ? [80, 60, 80] : 60);
+    try {
+      navigator.vibrate(isDuplicate ? [80, 60, 80] : 60);
+    } catch (_) {}
   }
 
   updateCardTextOnly(guest, isDuplicate);
@@ -164,7 +176,7 @@ export function renderCardSuccess(guest, isDuplicate = false) {
 }
 
 /**
- * 6. 掃描失敗業務入口 (傳入 i18n Key，支援語系即時重繪)
+ * 6. 掃描失敗業務入口 (傳入 i18n Key 或字串皆能防禦解析)
  */
 export function renderCardError(titleKey, subtitleKey) {
   currentCardState = { type: 'error', titleKey, subtitleKey };
@@ -173,11 +185,16 @@ export function renderCardError(titleKey, subtitleKey) {
   flashCameraBorder('error');
 
   if (navigator.vibrate) {
-    navigator.vibrate([120, 80, 120]);
+    try {
+      navigator.vibrate([120, 80, 120]);
+    } catch (_) {}
   }
 
+  const titleText = resolveI18n(titleKey);
+  const subtitleText = resolveI18n(subtitleKey);
+
   const staffNameEl = document.getElementById("staffGuestName");
-  if (staffNameEl) staffNameEl.textContent = "❌ " + t(titleKey);
+  if (staffNameEl) staffNameEl.textContent = "❌ " + titleText;
 
   const staffTableDigitEl = document.getElementById("staffTableDigit");
   if (staffTableDigitEl) staffTableDigitEl.textContent = "!";
@@ -186,7 +203,7 @@ export function renderCardError(titleKey, subtitleKey) {
   if (staffTableUnitEl) staffTableUnitEl.textContent = "";
 
   const staffHintEl = document.getElementById("staffLocationHint");
-  if (staffHintEl) staffHintEl.textContent = t(subtitleKey);
+  if (staffHintEl) staffHintEl.textContent = subtitleText;
 
   const guestWelcomeEl = document.getElementById("guestWelcomeText");
   if (guestWelcomeEl) guestWelcomeEl.textContent = t("gotoHelpDesk");
@@ -198,7 +215,7 @@ export function renderCardError(titleKey, subtitleKey) {
   if (guestTableUnitEl) guestTableUnitEl.textContent = "";
 
   const guestHintEl = document.getElementById("guestLocationHint");
-  if (guestHintEl) guestHintEl.textContent = t(subtitleKey);
+  if (guestHintEl) guestHintEl.textContent = subtitleText;
 
   const card = document.getElementById("resultCard");
   if (card) {
@@ -222,8 +239,11 @@ export function rerenderCardForLangChange() {
   if (currentCardState.type === 'success') {
     updateCardTextOnly(currentCardState.guest, currentCardState.isDuplicate);
   } else if (currentCardState.type === 'error') {
+    const titleText = resolveI18n(currentCardState.titleKey);
+    const subtitleText = resolveI18n(currentCardState.subtitleKey);
+
     const staffNameEl = document.getElementById("staffGuestName");
-    if (staffNameEl) staffNameEl.textContent = "❌ " + t(currentCardState.titleKey);
+    if (staffNameEl) staffNameEl.textContent = "❌ " + titleText;
 
     const staffTableDigitEl = document.getElementById("staffTableDigit");
     if (staffTableDigitEl) staffTableDigitEl.textContent = "!";
@@ -232,7 +252,7 @@ export function rerenderCardForLangChange() {
     if (staffTableUnitEl) staffTableUnitEl.textContent = "";
 
     const staffHintEl = document.getElementById("staffLocationHint");
-    if (staffHintEl) staffHintEl.textContent = t(currentCardState.subtitleKey);
+    if (staffHintEl) staffHintEl.textContent = subtitleText;
     
     const guestWelcomeEl = document.getElementById("guestWelcomeText");
     if (guestWelcomeEl) guestWelcomeEl.textContent = t("gotoHelpDesk");
@@ -244,14 +264,14 @@ export function rerenderCardForLangChange() {
     if (guestTableUnitEl) guestTableUnitEl.textContent = "";
 
     const guestHintEl = document.getElementById("guestLocationHint");
-    if (guestHintEl) guestHintEl.textContent = t(currentCardState.subtitleKey);
+    if (guestHintEl) guestHintEl.textContent = subtitleText;
   }
 }
 
 window.addEventListener("scansign-lang-changed", rerenderCardForLangChange);
 
 /**
- * 8. 視角翻轉按鈕綁定
+ * 8. 視角翻轉按鈕綁定 (支援初次初始化)
  */
 const flipBtn = document.getElementById("flipViewBtn");
 if (flipBtn) {
