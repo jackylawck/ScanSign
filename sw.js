@@ -1,5 +1,5 @@
 // sw.js
-// 注意：v202610040031-092e241 與 {
+// 注意：v202610040033-e237820 與 {
   "index.html": "sha256-Nkgu/hGB1RrKJgzus7JyLN2I4RRQu8LVG0IpM4az01o=",
   "manifest.webmanifest": "sha256-BMRcWXcgMdXApjfaa5qGjyq6LI6RvSCRAoZgzmfUj2c=",
   "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
@@ -17,7 +17,7 @@
   "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
   "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-v3-v202610040031-092e241";
+const CACHE_NAME = "scansign-v3-v202610040033-e237820";
 
 // 由 inject_sw_integrity.py 自動注入之 W3C SRI 完整性雜湊表
 const RESOURCE_INTEGRITY = {
@@ -51,12 +51,14 @@ const CRITICAL_ASSETS = [
   "js/i18n.js",
   "js/admin.js",
   "js/search.js",
+  "js/storage.js",
   "js/frame-guard.js",
+  "vendor/qrcode.min.js",       // 核心修復：納入關鍵保護，杜絕離線產票失敗
   "vendor/html5-qrcode.min.js"
 ];
 
 /**
- * 輔助工具：將 ArrayBuffer 轉為 Base64 字串 (採用 8KB 分塊拼接，兼顧效能與防爆棧)
+ * 輔助工具：將 ArrayBuffer 轉為 Base64 字串 (採用 32KB 分塊拼接，兼顧效能與防爆棧)
  */
 function bufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer);
@@ -99,7 +101,8 @@ self.addEventListener("install", (e) => {
             throw new Error(`SRI integrity mismatch for ${relPath}`);
           }
 
-          await cache.put(relPath, res);
+          // 核心相容性：使用 Request 物件標準化 URL，保證 iOS Safari 的 Cache-First 精準命中
+          await cache.put(new Request(relPath), res);
         } catch (err) {
           if (isCritical) {
             console.error(`[SW Fatal] 關鍵資源預快取或 SRI 校驗失敗，中斷安裝: ${relPath}`, err);
@@ -114,7 +117,7 @@ self.addEventListener("install", (e) => {
       try {
         const res = await fetch("data/manifest.enc.json", { cache: "no-cache" });
         if (res.ok) {
-          await cache.put("data/manifest.enc.json", res);
+          await cache.put(new Request("data/manifest.enc.json"), res);
         }
       } catch (err) {
         console.warn("[SW] data/manifest.enc.json 預載入受限 (現場可改以手動上傳模式):", err);
@@ -169,7 +172,7 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // 2. 靜態資源策略：Cache-First，命中即瞬回；背景非同步拉取更新 (使用 async IIFE 避免時序錯誤)
+  // 2. 靜態資源策略：Cache-First，命中即瞬回；背景非同步拉取更新
   e.respondWith((async () => {
     const cached = await caches.match(e.request, { ignoreSearch: true });
 
@@ -198,7 +201,7 @@ self.addEventListener("fetch", (e) => {
         return networkRes;
       }
 
-      // 網路返回 404/500 等異常：嘗試從快取回退（避免中斷用戶）
+      // 網路返回 404/500 等異常：嘗試從快取回退
       const fallbackCached = await caches.match(e.request, { ignoreSearch: true });
       return fallbackCached || networkRes;
     } catch (err) {
