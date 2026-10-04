@@ -637,3 +637,11 @@ html.frame-blocked { height: 100%; background: #000; }
   margin-top: 10px;
   display: block;
 }
+
+/* QR 碼圖像銳利化顯示，防止瀏覽器內插平滑演算法造成定位角模糊 */
+.qr-box img,
+.ticket-card img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
