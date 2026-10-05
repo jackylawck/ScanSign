@@ -1,5 +1,5 @@
 // sw.js
-// 注意：v202610050942-a739907 與 {
+// 注意：v202610050954-93936e1 與 {
   "index.html": "sha256-3mYqQ4RP9N6i8vkvQjbfdcmppMoetmkY7OvqWB12he4=",
   "manifest.webmanifest": "sha256-BMRcWXcgMdXApjfaa5qGjyq6LI6RvSCRAoZgzmfUj2c=",
   "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
@@ -12,12 +12,12 @@
   "js/search.js": "sha256-eDq3a0cvc81PdZLPuhIG99DH5NUWJykDCRjzXhO9UO8=",
   "js/storage.js": "sha256-lhxwd+ezJKVQDbBcFIsxpiXwHUGVWVRSfJElxG9Qb1c=",
   "js/frame-guard.js": "sha256-/oszFOuTSHyV4fuBPfpeaLkAi65hrKWCGJLYVxi9Tyk=",
-  "vendor/qrcode.min.js": "sha256-d6GOuQLhl3JnYX23EC+B1usNKANzvNut0BFpoygwksE=",
+  "vendor/qrcode.min.js": "sha256-lpABb+ErzY3rWHdlPDS7Aas3FvKl5ZT8ZO8dwykDTAs=",
   "vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g=",
   "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
   "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
 } 會由 scripts/inject_sw_integrity.py 自動注入
-const CACHE_NAME = "scansign-v3-a739907-1791193340855";
+const CACHE_NAME = "scansign-v3-93936e1-1791194091230";
 
 // 由 inject_sw_integrity.py 自動注入之 W3C SRI 完整性雜湊表
 const RESOURCE_INTEGRITY = {
@@ -33,7 +33,7 @@ const RESOURCE_INTEGRITY = {
   "js/search.js": "sha256-eDq3a0cvc81PdZLPuhIG99DH5NUWJykDCRjzXhO9UO8=",
   "js/storage.js": "sha256-lhxwd+ezJKVQDbBcFIsxpiXwHUGVWVRSfJElxG9Qb1c=",
   "js/frame-guard.js": "sha256-/oszFOuTSHyV4fuBPfpeaLkAi65hrKWCGJLYVxi9Tyk=",
-  "vendor/qrcode.min.js": "sha256-d6GOuQLhl3JnYX23EC+B1usNKANzvNut0BFpoygwksE=",
+  "vendor/qrcode.min.js": "sha256-lpABb+ErzY3rWHdlPDS7Aas3FvKl5ZT8ZO8dwykDTAs=",
   "vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g=",
   "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
   "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
