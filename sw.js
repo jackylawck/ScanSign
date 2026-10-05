@@ -1,5 +1,5 @@
 // sw.js
-// 注意：v202610050908-d020b32 與 {
+// 注意：v202610050930-93d26f8 與 {
   "index.html": "sha256-3mYqQ4RP9N6i8vkvQjbfdcmppMoetmkY7OvqWB12he4=",
   "manifest.webmanifest": "sha256-BMRcWXcgMdXApjfaa5qGjyq6LI6RvSCRAoZgzmfUj2c=",
   "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
@@ -16,8 +16,8 @@
   "vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g=",
   "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
   "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
-} 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-v3-v202610050908-d020b32";
+} 會由 scripts/inject_sw_integrity.py 自動注入
+const CACHE_NAME = "scansign-v3-v202610050930-93d26f8";
 
 // 由 inject_sw_integrity.py 自動注入之 W3C SRI 完整性雜湊表
 const RESOURCE_INTEGRITY = {
@@ -51,9 +51,9 @@ const CRITICAL_ASSETS = [
   "js/i18n.js",
   "js/admin.js",
   "js/search.js",
-  "js/storage.js",
+  "js/storage.js",              // 核心保護：杜絕離線 import 模組中斷
   "js/frame-guard.js",
-  "vendor/qrcode.min.js",       // 核心修復：納入關鍵保護，杜絕離線產票失敗
+  "vendor/qrcode.min.js",       // 核心保護：杜絕離線產票失敗
   "vendor/html5-qrcode.min.js"
 ];
 
@@ -72,26 +72,24 @@ function bufferToBase64(buffer) {
 }
 
 /**
- * 1. Install 階段：原生相對路徑解析 (相容 GitHub Pages 子路徑) 與嚴格 SRI 校驗
+ * 1. Install 階段：原生相對路徑解析、標頭淨化與雙重根路徑快取
  */
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       console.log(`[SW] 啟動預快取並執行 SRI 雜湊檢驗 (版本: ${CACHE_NAME})...`);
 
-      // A. 校驗並快取所有在 RESOURCE_INTEGRITY 清單中的資源
       for (const [relPath, expectedHash] of Object.entries(RESOURCE_INTEGRITY)) {
         const isCritical = CRITICAL_ASSETS.includes(relPath);
 
         try {
-          // 直接使用相對路徑 fetch，自動相容 https://user.github.io/repo-name/ 子路徑
           const res = await fetch(relPath, { cache: "no-cache" });
           if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
           }
 
-          // 核心密碼學：計算下載內容的 SHA-256 雜湊
-          const buffer = await res.clone().arrayBuffer();
+          // 核心密碼學：計算 SHA-256 雜湊
+          const buffer = await res.arrayBuffer();
           const digest = await crypto.subtle.digest("SHA-256", buffer);
           const actualHash = `sha256-${bufferToBase64(digest)}`;
 
@@ -101,29 +99,55 @@ self.addEventListener("install", (e) => {
             throw new Error(`SRI integrity mismatch for ${relPath}`);
           }
 
-          // 核心相容性：使用 Request 物件標準化 URL，保證 iOS Safari 的 Cache-First 精準命中
-          await cache.put(new Request(relPath), res);
+          // P3 修復：淨化 Headers，清除 Content-Encoding 防止 WebKit 二次解壓崩潰
+          const cleanHeaders = new Headers(res.headers);
+          cleanHeaders.delete("Content-Encoding");
+          cleanHeaders.delete("Content-Length");
+          cleanHeaders.set("Content-Length", buffer.byteLength.toString());
+
+          const makeCachedResponse = () => new Response(buffer, {
+            status: res.status,
+            statusText: res.statusText,
+            headers: cleanHeaders
+          });
+
+          await cache.put(new Request(relPath), makeCachedResponse());
+
+          // 根路徑 "./" 雙重快取：確保首頁斷網時秒開
+          if (relPath === "index.html") {
+            await cache.put(new Request("./"), makeCachedResponse());
+          }
+
         } catch (err) {
           if (isCritical) {
             console.error(`[SW Fatal] 關鍵資源預快取或 SRI 校驗失敗，中斷安裝: ${relPath}`, err);
-            throw err; // 嚴格阻斷 Service Worker 安裝
+            throw err;
           } else {
             console.warn(`[SW Warning] 非關鍵資源載入失敗，略過: ${relPath}`, err);
           }
         }
       }
 
-      // B. 預快取加密名冊 (已有 PBKDF2 + AES-GCM 內置密碼學完整性校驗)
+      // 預快取預設加密名冊 (Demo)
       try {
         const res = await fetch("data/manifest.enc.json", { cache: "no-cache" });
         if (res.ok) {
-          await cache.put(new Request("data/manifest.enc.json"), res);
+          const manifestBuffer = await res.arrayBuffer();
+          const manifestHeaders = new Headers(res.headers);
+          manifestHeaders.delete("Content-Encoding");
+          manifestHeaders.delete("Content-Length");
+          manifestHeaders.set("Content-Length", manifestBuffer.byteLength.toString());
+
+          await cache.put(new Request("data/manifest.enc.json"), new Response(manifestBuffer, {
+            status: res.status,
+            statusText: res.statusText,
+            headers: manifestHeaders
+          }));
         }
       } catch (err) {
-        console.warn("[SW] data/manifest.enc.json 預載入受限 (現場可改以手動上傳模式):", err);
+        console.warn("[SW] data/manifest.enc.json 預載入受限 (可由現場手動上傳模式補足):", err);
       }
     }).then(() => {
-      // 確保只有在預快取與 SRI 100% 通過後才接管
       return self.skipWaiting();
     })
   );
@@ -148,8 +172,7 @@ self.addEventListener("activate", (e) => {
 });
 
 /**
- * 3. Fetch 階段：離線優先 (Cache-First + Background Revalidation)
- * 具備非 200 網路故障回退快取與 SPA 導航兜底
+ * 3. Fetch 階段：離線優先 (Cache-First) + 異常回退防護
  */
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
@@ -158,57 +181,35 @@ self.addEventListener("fetch", (e) => {
   try {
     requestUrl = new URL(e.request.url);
   } catch {
-    return; // 忽略非合法 URL 請求 (如 chrome-extension:// 等)
-  }
-
-  // 僅攔截 http 與 https 協議
-  if (!requestUrl.protocol.startsWith("http")) return;
-
-  // 1. 加密名冊策略：純 Cache-First (防禦性 ignoreSearch)
-  if (requestUrl.pathname.endsWith("manifest.enc.json")) {
-    e.respondWith(
-      caches.match(e.request, { ignoreSearch: true }).then((cached) => cached || fetch(e.request))
-    );
     return;
   }
 
-  // 2. 靜態資源策略：Cache-First，命中即瞬回；背景非同步拉取更新
+  if (!requestUrl.protocol.startsWith("http")) return;
+
   e.respondWith((async () => {
+    // 1. 優先匹配快取
     const cached = await caches.match(e.request, { ignoreSearch: true });
-
     if (cached) {
-      // 背景非同步更新，不阻塞前端渲染與掃描響應
-      fetch(e.request)
-        .then((networkRes) => {
-          if (networkRes && networkRes.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(e.request, networkRes.clone()).catch(() => {});
-            });
-          }
-        })
-        .catch(() => {}); // 斷網環境靜默忽視背景更新
-
       return cached;
     }
 
-    // 無快取紀錄（首次存取）：發起網路請求
+    // 2. 快取未命中時請求網路 (P2 修復：增加非 200 回退防護)
     try {
       const networkRes = await fetch(e.request);
       if (networkRes && networkRes.status === 200) {
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(e.request, networkRes.clone()).catch(() => {});
-        });
         return networkRes;
       }
 
-      // 網路返回 404/500 等異常：嘗試從快取回退
+      // 若網路回傳 404/500，嘗試回退至快取
       const fallbackCached = await caches.match(e.request, { ignoreSearch: true });
-      return fallbackCached || networkRes;
+      if (fallbackCached) return fallbackCached;
+
+      return networkRes;
     } catch (err) {
-      // 網路徹底斷開且為頁面導航：回退到根頁面 SPA 快取
+      // 3. 斷網導航模式回退首頁
       if (e.request.mode === "navigate") {
-        const fallbackIndex = (await caches.match("index.html", { ignoreSearch: true })) ||
-                              (await caches.match("./index.html", { ignoreSearch: true }));
+        const fallbackIndex = (await caches.match("./", { ignoreSearch: true })) ||
+                              (await caches.match("index.html", { ignoreSearch: true }));
         if (fallbackIndex) return fallbackIndex;
       }
 
