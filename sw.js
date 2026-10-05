@@ -1,8 +1,7 @@
 // sw.js
-// 注意：__CACHE_VERSION__ 與 __SW_RESOURCE_INTEGRITY_MAP__ 會由 scripts/inject_sw_integrity.py 自動注入
 const CACHE_NAME = "scansign-v3-__CACHE_VERSION__";
 
-// 由 inject_sw_integrity.py 自動注入之 W3C SRI 完整性雜湊表
+// 由 inject_sw_integrity.py 自動注入
 const RESOURCE_INTEGRITY = __SW_RESOURCE_INTEGRITY_MAP__;
 
 // 關鍵核心資產清單（SRI 雜湊不符或檔案丟失立即終止安裝，杜絕損壞版本上線）
@@ -159,7 +158,7 @@ self.addEventListener("fetch", (e) => {
       return cached;
     }
 
-    // 2. 快取未命中時請求網路 (P2 修復：增加非 200 回退防護)
+    // 2. 快取未命中時請求網路 (增加非 200 回退防護)
     try {
       const networkRes = await fetch(e.request);
       if (networkRes && networkRes.status === 200) {
