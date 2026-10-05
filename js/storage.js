@@ -131,10 +131,19 @@ export function initStorage() {
   return storageInitPromise;
 }
 
+/**
+ * 依標準 Schema 寫入簽到記錄 (修復 WebKit 事務死鎖問題)
+ */
 export function recordCheckIn(logEntry) {
   logEntry.monotonic_seq = ++monotonicSeq;
   logEntry.verified = logEntry.verified || "pending";
   logEntry.method = logEntry.method || "scan";
+
+  // Schema 雙向相容映射
+  logEntry.device_id = logEntry.device_id || logEntry.station || "C1";
+  logEntry.scanned_at = logEntry.scanned_at || logEntry.checkin_time || new Date().toISOString();
+  logEntry.table_no = logEntry.table_no || logEntry.table || "--";
+  logEntry.name = logEntry.name || "Guest";
 
   inMemoryScannedSet.add(logEntry.tid);
   inMemoryLogs.push(logEntry);
@@ -148,14 +157,14 @@ export function recordCheckIn(logEntry) {
       
       req.onsuccess = (e) => {
         logEntry.__dbId = e.target.result;
-        // 核心修復：如果非同步驗簽已在落盤前結算完成，立即回寫最新狀態
-        if (logEntry.verified !== "pending") {
-          updateLogVerifiedStatus(logEntry, logEntry.verified);
-        }
       };
 
+      // 關鍵修復：舊事務提交完畢後，才觸發二次狀態同步，杜絕 WebKit InvalidStateError
       tx.oncomplete = () => {
         pendingDBWrites--;
+        if (logEntry.verified !== "pending" && logEntry.__dbId) {
+          updateLogVerifiedStatus(logEntry, logEntry.verified);
+        }
       };
 
       tx.onerror = () => {
@@ -176,7 +185,6 @@ export function updateLogVerifiedStatus(entryRef, status) {
 
   if (isIndexedDBAvailable && db) {
     if (!entryRef.__dbId) {
-      // 若 DB ID 尚未生成，狀態已在 entryRef 上更新，待 recordCheckIn 的 req.onsuccess 自動處理
       return;
     }
 
