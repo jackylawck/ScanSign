@@ -1,25 +1,7 @@
 // sw.js
-// 注意：v202610050954-93936e1 與 {
-  "index.html": "sha256-3mYqQ4RP9N6i8vkvQjbfdcmppMoetmkY7OvqWB12he4=",
-  "manifest.webmanifest": "sha256-BMRcWXcgMdXApjfaa5qGjyq6LI6RvSCRAoZgzmfUj2c=",
-  "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
-  "js/app.js": "sha256-kwTouYZYFCuUd92af3TosYiOgJYVp13uBjqvTIw9srI=",
-  "js/crypto.js": "sha256-8Id2Xvv9Cbo96ca1aLUx+atj0M63b/4Xwwy5N/wbSE8=",
-  "js/scanner.js": "sha256-Nl7moExgyTNJ8r7AbsrMlZT9/YYDkB9qs0bTQcivgq0=",
-  "js/ui.js": "sha256-7uJbo87PJ32T99T70l+wOXCqUswvYNw2Fi5aa/lsfK0=",
-  "js/i18n.js": "sha256-ChNRzOHLfvNv5FBcfug90cGlvJlxC24PQ2beunRHDe8=",
-  "js/admin.js": "sha256-R4V9NZ7JjHI9kn94hpQ2aA1RbYpnp4RDuW2ArtVG+UA=",
-  "js/search.js": "sha256-eDq3a0cvc81PdZLPuhIG99DH5NUWJykDCRjzXhO9UO8=",
-  "js/storage.js": "sha256-lhxwd+ezJKVQDbBcFIsxpiXwHUGVWVRSfJElxG9Qb1c=",
-  "js/frame-guard.js": "sha256-/oszFOuTSHyV4fuBPfpeaLkAi65hrKWCGJLYVxi9Tyk=",
-  "vendor/qrcode.min.js": "sha256-lpABb+ErzY3rWHdlPDS7Aas3FvKl5ZT8ZO8dwykDTAs=",
-  "vendor/html5-qrcode.min.js": "sha256-mZISmh+5jk5UAJo5l8/32QizJMcQQg8C9ZkRzwPr53g=",
-  "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
-  "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
-} 會由 scripts/inject_sw_integrity.py 自動注入
-const CACHE_NAME = "scansign-v3-93936e1-1791194091230";
+const CACHE_NAME = "scansign-v3-ef94dd9-1791194124181";
 
-// 由 inject_sw_integrity.py 自動注入之 W3C SRI 完整性雜湊表
+// 由 inject_sw_integrity.py 自動注入
 const RESOURCE_INTEGRITY = {
   "index.html": "sha256-3mYqQ4RP9N6i8vkvQjbfdcmppMoetmkY7OvqWB12he4=",
   "manifest.webmanifest": "sha256-BMRcWXcgMdXApjfaa5qGjyq6LI6RvSCRAoZgzmfUj2c=",
@@ -193,7 +175,7 @@ self.addEventListener("fetch", (e) => {
       return cached;
     }
 
-    // 2. 快取未命中時請求網路 (P2 修復：增加非 200 回退防護)
+    // 2. 快取未命中時請求網路 (增加非 200 回退防護)
     try {
       const networkRes = await fetch(e.request);
       if (networkRes && networkRes.status === 200) {
