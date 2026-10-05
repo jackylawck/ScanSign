@@ -1,6 +1,6 @@
 // sw.js
-// 注意：v202610050828-9b9a966 與 {
-  "index.html": "sha256-RJD6PxvOtoD4ylOk0Ir4DnfmxS6DufNlsoNhyRu1S14=",
+// 注意：v202610050830-62117a6 與 {
+  "index.html": "sha256-3mYqQ4RP9N6i8vkvQjbfdcmppMoetmkY7OvqWB12he4=",
   "manifest.webmanifest": "sha256-BMRcWXcgMdXApjfaa5qGjyq6LI6RvSCRAoZgzmfUj2c=",
   "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
   "js/app.js": "sha256-kwTouYZYFCuUd92af3TosYiOgJYVp13uBjqvTIw9srI=",
@@ -17,11 +17,11 @@
   "icons/ScanSign192icon.png": "sha256-9O5suNKloLWloyA8d4d2DQ8OvR0KhlawQo34TBMaE2U=",
   "icons/ScanSign512icon.png": "sha256-p758jmMXqqDvKNyGFG3uPu+Rl9HEMGjbLeOqShw6e7o="
 } 會由 GitHub Actions 自動注入
-const CACHE_NAME = "scansign-v3-v202610050828-9b9a966";
+const CACHE_NAME = "scansign-v3-v202610050830-62117a6";
 
 // 由 inject_sw_integrity.py 自動注入之 W3C SRI 完整性雜湊表
 const RESOURCE_INTEGRITY = {
-  "index.html": "sha256-RJD6PxvOtoD4ylOk0Ir4DnfmxS6DufNlsoNhyRu1S14=",
+  "index.html": "sha256-3mYqQ4RP9N6i8vkvQjbfdcmppMoetmkY7OvqWB12he4=",
   "manifest.webmanifest": "sha256-BMRcWXcgMdXApjfaa5qGjyq6LI6RvSCRAoZgzmfUj2c=",
   "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
   "js/app.js": "sha256-kwTouYZYFCuUd92af3TosYiOgJYVp13uBjqvTIw9srI=",
