@@ -18,7 +18,8 @@ import {
   getPendingSecurityWrites,
   getCheckedInCount,
   getSecurityLogs,
-  clearCurrentSessionMemory
+  clearCurrentSessionMemory,
+  clearEntireDatabase // 核心導入：徹底清空本機磁碟與記憶體
 } from './storage.js';
 import { safeStartCamera, safeStopCamera, bindVisibilityAutoRecover, enableScreenWakeLock } from './scanner.js';
 import { renderCardSuccess, renderCardError, bindExportAction } from './ui.js';
@@ -40,6 +41,15 @@ let lastExportedAt = null;
 
 let generatedEncJson = null;
 let generatedTicketsHtml = null;
+
+// P2 優化：從 localStorage 讀取持久化名冊指紋，防範頁面重整後被重置為 null
+let lastManifestSignature = localStorage.getItem("scansign_manifest_sig") || null;
+
+function getManifestSignature(m) {
+  if (!m || typeof m !== 'object') return "";
+  const keys = Object.keys(m).filter(k => !k.startsWith("__")).sort();
+  return JSON.stringify(keys);
+}
 
 /**
  * 0. 離線標準 QR Code 生成引擎 (原生點陣 Canvas -> PNG Data URL)
@@ -116,7 +126,7 @@ bindModal("openGuideBtn", "closeGuideBtn", "guideModal");
 bindModal("openComplianceBtn", "closeComplianceBtn", "complianceModal");
 bindModal("openAdminBtn", "closeAdminBtn", "adminModal");
 
-// 🔒 返回首頁 / 重新更換工位或名冊 (徹底重設所有狀態與暫存檔名)
+// 🔒 返回首頁 / 重新更換工位或鎖定 (保留 IndexedDB 落盤數據)
 const lockScreenBtn = document.getElementById("lockScreenBtn");
 if (lockScreenBtn) {
   lockScreenBtn.addEventListener("click", async () => {
@@ -142,6 +152,37 @@ if (lockScreenBtn) {
     if (mainApp) mainApp.classList.add("hidden");
     if (pinLockScreen) pinLockScreen.classList.remove("hidden");
     if (pinInput) pinInput.value = "";
+  });
+}
+
+// 🧹 手動專用按鈕：一鍵重設/清空本機簽到記錄
+const resetDataBtn = document.getElementById("resetDataBtn");
+if (resetDataBtn) {
+  resetDataBtn.addEventListener("click", async () => {
+    const confirmed = window.confirm("⚠️️ 確定要清空本機的所有簽到記錄嗎？\n\n清空後簽到人數將歸零，此操作無法復原。");
+    if (!confirmed) return;
+
+    await clearEntireDatabase();
+    updateTally();
+
+    const manualInputEl = document.getElementById("manualInput");
+    if (manualInputEl) {
+      manualInputEl.value = "";
+      manualInputEl.parentElement?.classList.remove("has-val");
+    }
+    const searchResults = document.getElementById("searchResults");
+    if (searchResults) searchResults.innerHTML = "";
+
+    const resultCard = document.getElementById("resultCard");
+    if (resultCard) {
+      resultCard.className = "result-card idle";
+      const staffName = document.getElementById("staffGuestName");
+      const staffTable = document.getElementById("staffTableDigit");
+      if (staffName) staffName.textContent = t("idlePrompt");
+      if (staffTable) staffTable.textContent = "--";
+    }
+
+    alert("✅ 本機簽到資料庫已徹底清空，人數已歸零！");
   });
 }
 
@@ -193,7 +234,7 @@ if (importRosterFileInput) {
   });
 }
 
-// 🛠️ 主辦方前端自訂 PIN 與產票引擎 (純離線 + 100% PNG 相容票券)
+// 🛠️ 主辦方前端自訂 PIN 與產票引擎
 const startGenerateBtn = document.getElementById("startGenerateBtn");
 if (startGenerateBtn) {
   startGenerateBtn.addEventListener("click", async () => {
@@ -342,7 +383,7 @@ if (startGenerateBtn) {
   });
 }
 
-// 下載加密名冊
+// 下載按鈕監聽
 const downloadManifestBtn = document.getElementById("downloadManifestBtn");
 if (downloadManifestBtn) {
   downloadManifestBtn.addEventListener("click", () => {
@@ -352,7 +393,6 @@ if (downloadManifestBtn) {
   });
 }
 
-// 下載可列印/發送票券
 const downloadTicketsHtmlBtn = document.getElementById("downloadTicketsHtmlBtn");
 if (downloadTicketsHtmlBtn) {
   downloadTicketsHtmlBtn.addEventListener("click", () => {
@@ -379,38 +419,7 @@ if ("serviceWorker" in navigator) {
   }).catch(console.warn);
 }
 
-// PWA 主畫面安裝引導
-let deferredPrompt = null;
-const installBtn = document.getElementById("installPwaBtn");
-const iosGuide = document.getElementById("iosInstallGuide");
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-if (!isStandalone) {
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBtn) installBtn.classList.remove("hidden");
-  });
-
-  if (installBtn) {
-    installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        installBtn.classList.add("hidden");
-      }
-      deferredPrompt = null;
-    });
-  }
-
-  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  if (isIos && iosGuide) {
-    iosGuide.classList.remove("hidden");
-  }
-}
-
-// 名冊檔案切換與上傳讀取
+// 名冊來源切換
 const sourceSelect = document.getElementById("manifestSourceSelect");
 const customContainer = document.getElementById("customManifestContainer");
 const fileInput = document.getElementById("manifestFileInput");
@@ -479,7 +488,7 @@ window.addEventListener("beforeunload", (e) => {
   }
 });
 
-// 2. PIN 解鎖與強制選取工位
+// 2. PIN 解鎖與強制選取工位 (修復 P1/P2：名冊指紋持久化比對，換名冊才清空)
 const unlockBtn = document.getElementById("unlockBtn");
 if (unlockBtn) {
   unlockBtn.addEventListener("click", async () => {
@@ -524,6 +533,22 @@ if (unlockBtn) {
       }
 
       manifest = await decryptManifestWithPin(encData, pin);
+
+      // 🛡️ P1/P2 修復：localStorage 雙重持久化指紋比對
+      const incomingSignature = getManifestSignature(manifest);
+      if (lastManifestSignature === null) {
+        lastManifestSignature = incomingSignature;
+        localStorage.setItem("scansign_manifest_sig", incomingSignature);
+      } else if (lastManifestSignature !== incomingSignature) {
+        console.warn("[Storage] 偵測到名冊更換，自動重置舊簽到資料庫...");
+        await clearEntireDatabase();
+        lastManifestSignature = incomingSignature;
+        localStorage.setItem("scansign_manifest_sig", incomingSignature);
+      } else {
+        console.log("[Storage] 名冊一致，平滑恢復現有簽到資料。");
+      }
+
+      updateTally();
       initSearchIndex(manifest);
 
       const pinLockScreen = document.getElementById("pinLockScreen");
@@ -536,7 +561,6 @@ if (unlockBtn) {
         screen.orientation.lock('portrait').catch(() => {});
       }
 
-      updateTally();
       await safeStartCamera(onScan);
       bindVisibilityAutoRecover(onScan);
 
@@ -551,9 +575,11 @@ if (unlockBtn) {
   });
 }
 
-// 3. 掃描處理流程 (matchedKey 對齊 + 多語系包裹)
+// 3. 掃描處理流程 (加入 DEBUG log 與 Schema 容錯)
 function onScan(decodedText) {
   try {
+    console.log("[DEBUG] QR 掃描觸發成功:", decodedText);
+
     if (!decodedText || typeof decodedText !== "string" || !decodedText.startsWith("v1.")) {
       logSecurityIncident("INVALID_FORMAT", { 
         raw: String(decodedText).slice(0, 150), 
@@ -571,7 +597,6 @@ function onScan(decodedText) {
 
     const [_, rawTid, sigStr] = parts;
 
-    // 雙向匹配名冊鍵值並鎖定 matchedKey
     let matchedKey = null;
     let guest = null;
     if (manifest) {
@@ -611,6 +636,7 @@ function onScan(decodedText) {
       device_id: currentDeviceId,
       scanned_at: new Date().toISOString(),
       table_no: guest.table || "--",
+      name: guest.name || "Guest",
       method: "scan",
       verified: "pending"
     });
@@ -673,6 +699,7 @@ function handleManualCheckIn(searchTid) {
     device_id: currentDeviceId,
     scanned_at: new Date().toISOString(),
     table_no: guest.table || "--",
+    name: guest.name || "Guest",
     method: "manual",
     verified: "exempt"
   });
