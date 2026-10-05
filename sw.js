@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = "scansign-v3-ef94dd9-1791194124181";
+const CACHE_NAME = "scansign-v3-922f793-1791194464111";
 
 // 由 inject_sw_integrity.py 自動注入
 const RESOURCE_INTEGRITY = {
@@ -8,7 +8,7 @@ const RESOURCE_INTEGRITY = {
   "css/style.css": "sha256-u2hAtPJX3E41+UQP/y48AtBfX1C3dvpB5wwnSPx08FE=",
   "js/app.js": "sha256-kwTouYZYFCuUd92af3TosYiOgJYVp13uBjqvTIw9srI=",
   "js/crypto.js": "sha256-8Id2Xvv9Cbo96ca1aLUx+atj0M63b/4Xwwy5N/wbSE8=",
-  "js/scanner.js": "sha256-Nl7moExgyTNJ8r7AbsrMlZT9/YYDkB9qs0bTQcivgq0=",
+  "js/scanner.js": "sha256-PWAnpws8oA1PJxrvJ7st8uAqx2ggxNUqS7YBP7LFRfw=",
   "js/ui.js": "sha256-7uJbo87PJ32T99T70l+wOXCqUswvYNw2Fi5aa/lsfK0=",
   "js/i18n.js": "sha256-ChNRzOHLfvNv5FBcfug90cGlvJlxC24PQ2beunRHDe8=",
   "js/admin.js": "sha256-R4V9NZ7JjHI9kn94hpQ2aA1RbYpnp4RDuW2ArtVG+UA=",

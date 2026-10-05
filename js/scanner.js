@@ -57,6 +57,7 @@ export async function safeStartCamera(onScanSuccess) {
     const config = {
       fps: 15, // 核心調校：提升至 15fps，加速軟解與晃動時的影格捕捉
       qrbox: { width: qrboxSize, height: qrboxSize },
+      aspectRatio: 1.0, // P2 修復：鎖定正方形視角，防止 Safari 長屏相機預覽拉伸變形
       disableFlip: true,
       experimentalFeatures: {
         useBarCodeDetectorIfSupported: true // 啟用 iOS 17+ 原生硬體加速
@@ -132,6 +133,21 @@ export function safeStopCamera() {
         }
         await html5QrCode.clear().catch(() => {});
       }
+
+      // P1 核心修復：主動切斷 WebKit/Safari 原生 MediaStreamTracks，杜絕硬體佔用鎖死
+      const videoEl = document.querySelector("#reader video");
+      if (videoEl && videoEl.srcObject) {
+        const stream = videoEl.srcObject;
+        if (typeof stream.getTracks === 'function') {
+          stream.getTracks().forEach(track => {
+            try {
+              track.stop();
+            } catch (_) {}
+          });
+        }
+        videoEl.srcObject = null;
+      }
+
     } catch (e) {
       console.warn("[Scanner] 相機釋放非致命例外:", e);
     } finally {
