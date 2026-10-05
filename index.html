@@ -123,7 +123,7 @@
     </div>
   </div>
 
-  <!-- 🛠️ 主辦方產票與自訂 PIN 工具彈窗 (Admin Console) -->
+  <!-- 🛠️️ 主辦方產票與自訂 PIN 工具彈窗 (Admin Console) -->
   <div id="adminModal" class="modal-overlay hidden">
     <div class="modal-card admin-modal-card">
       <h3 data-i18n="adminTitle">🛠️ 主辦方離線產票與自訂 PIN 系統</h3>
@@ -218,6 +218,8 @@
     <header class="status-bar">
       <div class="station-control-group">
         <button id="lockScreenBtn" class="nav-badge-btn lock-btn" type="button" data-i18n="btnLockStation">🔒 鎖定 / 換名冊</button>
+        <!-- 核心新增：手動清空資料庫重設按鈕 -->
+        <button id="resetDataBtn" class="nav-badge-btn reset-btn" type="button" data-i18n="btnResetData" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5;">🧹 重設簽到</button>
         <div class="counter-tag" id="currentStationTag">C1</div>
       </div>
       <div class="live-tally"><span data-i18n="checkedInCount">已簽到：</span><span id="scanCountDisplay">0</span></div>
