@@ -6,7 +6,7 @@ let activeWakeLock = null;
 
 let lastScanText = "";
 let lastScanTime = 0;
-const SCAN_COOLDOWN_MS = 1500; // 優化 4.1：微調為 1.5 秒，提升現場重掃流暢度
+const SCAN_COOLDOWN_MS = 1500; // 1.5 秒冷卻，平衡防重複秒刷與手抖重試體驗
 
 let visibilityBound = false;
 let currentOnScanSuccess = null;
@@ -52,13 +52,14 @@ export async function safeStartCamera(onScanSuccess) {
       html5QrCode = new Html5Qrcode("reader");
     }
 
-    const qrboxSize = Math.min(250, Math.floor(window.innerWidth * 0.7));
+    // 核心調校：取景框擴展至 300px / 80%，避免大尺寸或高密度 QR 碼邊界裁切
+    const qrboxSize = Math.min(300, Math.floor(window.innerWidth * 0.8));
     const config = {
-      fps: 10,
+      fps: 15, // 核心調校：提升至 15fps，加速軟解與晃動時的影格捕捉
       qrbox: { width: qrboxSize, height: qrboxSize },
       disableFlip: true,
       experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true // 啟用 iOS 原生 BarcodeDetector 硬體加速
+        useBarCodeDetectorIfSupported: true // 啟用 iOS 17+ 原生硬體加速
       }
     };
 
@@ -122,7 +123,6 @@ export function safeStopCamera() {
       }
 
       if (html5QrCode) {
-        // 優化 4.2：多重守衛判定，防止舊版庫 isScanning 為 undefined 導致略過 stop()
         const isRunning = (typeof html5QrCode.isScanning === 'boolean')
           ? html5QrCode.isScanning
           : (html5QrCode.getState?.() === 2 || cameraState === 'stopping');
