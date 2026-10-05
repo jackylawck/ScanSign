@@ -69,9 +69,12 @@ export async function signToken(privateKey, tid) {
 
   const bytes = new Uint8Array(signature);
   let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const CHUNK_SIZE = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode.apply(null, chunk);
   }
+
   return btoa(binary)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -91,7 +94,7 @@ export async function exportPublicKeyRawHex(publicKey) {
 
 /**
  * 6. 使用自訂 PIN 碼執行 PBKDF2 + AES-256-GCM 加密名冊 (自動封裝公鑰)
- * 關鍵修復：產出 ciphertext 欄位，徹底對齊 Python generate_event.py 與 crypto.js 解密器
+ * 關鍵修復：產出 ciphertext 與 data 雙欄位，徹底對齊 Python generate_event.py 與 crypto.js 解密器
  */
 export async function encryptManifestWithCustomPin(manifestObj, pin, publicKey = null) {
   ensureCryptoEnvironment();
@@ -149,8 +152,8 @@ export async function encryptManifestWithCustomPin(manifestObj, pin, publicKey =
     cipher: "AES-256-GCM",
     salt: saltHex,
     iv: ivHex,
-    ciphertext: cipherHex, // 核心修復：標準密文屬性名
-    data: cipherHex       // 防禦性回退相容
+    ciphertext: cipherHex, // 標準密文屬性
+    data: cipherHex        // 防禦性向後相容
   };
 }
 
@@ -222,6 +225,8 @@ function isHeaderRow(parts) {
  */
 function normalizeTable(raw) {
   const s = String(raw || '').trim();
+  if (!s) return "1";
+
   const match = s.match(/^([A-Za-z\u4e00-\u9fff]*)[\s\-]*(\d+)([A-Za-z]?)/);
   if (match) {
     let prefix = match[1] ? match[1].replace(/^(table|桌|圍|第)/i, '').trim().toUpperCase() : '';
@@ -257,7 +262,7 @@ export function parseGuestListInput(rawText) {
       const name = rawName || "貴賓";
       const table = normalizeTable(rawTable);
 
-      // 核心修復：正規化提取純數字末 4 碼，與後端 Python 邏輯精準對齊
+      // 正規化提取純數字末 4 碼，與後端 Python 邏輯精準對齊
       const phoneDigits = rawPhone.replace(/\D/g, '');
       let phone = "0000";
       if (phoneDigits.length >= 4) {
@@ -282,9 +287,12 @@ export async function exportPublicKeySpki(publicKey) {
   if (bytes.byteLength === 0) {
     throw new Error("SPKI 匯出失敗：公鑰為空");
   }
+  
   let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const CHUNK_SIZE = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode.apply(null, chunk);
   }
   return btoa(binary);
 }
